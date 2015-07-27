@@ -30,13 +30,12 @@ impl Server {
     /// connection.
     ///
     /// This method does not return.
-    pub fn start(&self, websocket_port: u16, initial_markdown: Option<String>) {
+    pub fn start(&self, websocket_port: u16, initial_markdown: String) {
         let mut server = Nickel::new();
 
         let mut data = HashMap::new();
         data.insert("websocket_port", websocket_port.to_string());
 
-        let initial_markdown = initial_markdown.unwrap_or("".to_string());
         data.insert("initial_markdown", markdown::to_html(&initial_markdown));
 
         // We need to figure out the crate root, so we can pass absolute paths into the nickel
