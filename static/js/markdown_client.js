@@ -3,10 +3,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (hljs !== undefined) {
             var codeBlocks = document.querySelectorAll('pre code');
             for (var i = 0; i < codeBlocks.length; i++) {
-                hljs.highlightBlock(codeBlocks[i]);
+                var codeBlock = codeBlocks[i];
+                hljs.highlightBlock(codeBlock);
+
+                // Since the github css doesn't play nice with highlight.js, we
+                // need to set the background of all `pre` elements to be the
+                // color of the inner `code` block.
+                codeBlock.parentNode.style.background = (
+                    getComputedStyle(codeBlock)
+                        .getPropertyValue('background'));
             }
         }
     }
+
 
     syntaxHighlight();
     var previewWindow = document.getElementById('markdown-preview');

@@ -86,6 +86,7 @@ pub struct Server {
     http_server: Arc<RwLock<HttpServer>>,
     websocket_server: Arc<RwLock<WebSocketServer>>,
     initial_markdown: Option<String>,
+    highlight_theme: Option<String>,
 }
 
 impl Server {
@@ -104,6 +105,7 @@ impl Server {
             http_server: Arc::new(RwLock::new(http_server)),
             websocket_server: Arc::new(RwLock::new(websocket_server)),
             initial_markdown: None,
+            highlight_theme: None,
         }
     }
 
@@ -113,7 +115,15 @@ impl Server {
         self
     }
 
+    /// Sets the theme that should be used for syntax highlighting.
     ///
+    /// Syntax highlighting is provided by [highlight.js](https://highlightjs.org/). All themes
+    /// supported by highlight.js are supported.
+    pub fn highlight_theme(&mut self, theme: &str) -> &mut Server {
+        self.highlight_theme = Some(theme.to_string());
+        self
+    }
+
     /// Starts the server, returning a `ServerHandle` to communicate with it.
     pub fn start(self) -> ServerHandle {
         let websocket_server = self.websocket_server.clone();
@@ -132,10 +142,14 @@ impl Server {
             Some(ref markdown) => markdown.clone(),
             None => "".to_string()
         };
+        let highlight_theme = match self.highlight_theme {
+            Some(ref theme) => theme.clone(),
+            None => "github".to_string()
+        };
         thread::spawn(move || {
             let server = http_server.read().unwrap();
             debug!("Starting http_server");
-            server.start(websocket_port, initial_markdown);
+            server.start(websocket_port, initial_markdown, highlight_theme);
         });
 
         ServerHandle { server: self }

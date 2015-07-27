@@ -1,9 +1,9 @@
 [submodule "static/vendor/js/reconnecting-websocket"]
 	path = static/vendor/reconnecting-websocket
 	url = https://github.com/joewalnes/reconnecting-websocket
-[submodule "static/vendor/css/github-markdown-css"]
-	path = static/vendor/github-markdown-css
-	url = https://github.com/sindresorhus/github-markdown-css
 [submodule "static/vendor/highlight.js"]
 	path = static/vendor/highlight.js
 	url = https://github.com/components/highlightjs
+[submodule "static/vendor/github-markdown-css"]
+	path = static/vendor/github-markdown-css
+	url = https://github.com/euclio/github-markdown-css
