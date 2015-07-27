@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', function() {
+    function syntaxHighlight() {
+        if (hljs !== undefined) {
+            var codeBlocks = document.querySelectorAll('pre code');
+            for (var i = 0; i < codeBlocks.length; i++) {
+                hljs.highlightBlock(codeBlocks[i]);
+            }
+        }
+    }
+
+    syntaxHighlight();
     var previewWindow = document.getElementById('markdown-preview');
     var webSocketUrl = ('ws://localhost:' +
                         previewWindow.getAttribute('data-websocket-port'));
@@ -13,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     socket.onmessage = function(event) {
         console.log('Data received: ' + event.data);
         document.getElementById('markdown-preview').innerHTML = event.data;
+        syntaxHighlight();
     }
 
     socket.onerror = function(event) {
