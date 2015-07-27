@@ -71,14 +71,14 @@ impl ServerHandle {
     /// Send a markdown string to be rendered by the server.
     ///
     /// The HTML will then be sent to all websocket connections.
-    pub fn send_markdown(&self, markdown: String) {
+    pub fn send_markdown(&self, markdown: &str) {
         let ws_server_lock = self.server.websocket_server.clone();
         let ws_server = ws_server_lock.read().unwrap();
-        ws_server.notify(markdown::to_html(&markdown));
+        ws_server.notify(markdown::to_html(markdown));
     }
 }
 
-/// The `Server` type constructs a new markdown server.
+/// The `Server` type constructs a new markdown preview server.
 ///
 /// The server will listen for HTTP and WebSocket connections on arbitrary ports.
 pub struct Server {
