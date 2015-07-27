@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link href="/vendor/css/github-markdown-css/github-markdown.css" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
+    <script src="/vendor/js/reconnecting-websocket/reconnecting-websocket.min.js"></script>
+    <script src="/js/markdown_client.js"></script>
+    <title>Markdown Composer</title>
+  </head>
+  <body>
+    <article class="markdown-body" id="markdown-preview" data-websocket-port="{{ websocket_port }}">
+      {{{ initial_markdown }}}
+    </article>
+  </body>
+</html>
