@@ -13,6 +13,8 @@ server renders a page containing a markdown preview. Client-side JavaScript then
 initiates a WebSocket connection which allows the server to push changes to the
 client.
 
+Full documentation may be found [here](https://euclio.github.io/aurelius).
+
 This crate was designed to power [vim-markdown-composer], a markdown preview
 plugin for [Neovim](http://neovim.io), but it may be used to implement similar
 plugins for any editor. See [vim-markdown-composer] for a usage example.
