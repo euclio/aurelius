@@ -3,6 +3,9 @@
 [aurelius](https://github.com/euclio/aurelius) is a complete solution for
 rendering and previewing markdown.
 
+[![Build Status](https://travis-ci.org/euclio/aurelius.svg)](https://travis-ci.org/euclio/aurelius)
+[![crates.io](http://meritbadge.herokuapp.com/aurelius)](https://crates.io/crates/aurelius)
+
 This crate provides a server that can render and update an HTML preview of
 markdown without a client-side refresh. The server listens for both WebSocket
 and HTTP connections on arbitrary ports. Upon receiving an HTTP request, the
