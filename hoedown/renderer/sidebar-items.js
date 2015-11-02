@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["AutoLink","The type of an autolink candidate"],["Table","The table alignment or position"]],"mod":[["html","Contains the html renderer and utilities"],["list","Flags that describe a list or list item"],["trace",""],["wrapper",""]],"trait":[["Render","Represents render behavior"]]});

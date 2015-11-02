@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["MapBuilder","`MapBuilder` is a helper type that construct `Data` types."],["VecBuilder",""]]});

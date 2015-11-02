@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Trace` struct in crate `hoedown`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Trace">
+
+    <title>hoedown::renderer::trace::Trace - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>hoedown</a>::<wbr><a href='../index.html'>renderer</a>::<wbr><a href='index.html'>trace</a></p><script>window.sidebarCurrent = {name: 'Trace', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>hoedown</a>::<wbr><a href='../index.html'>renderer</a>::<wbr><a href='index.html'>trace</a>::<wbr><a class='struct' href=''>Trace</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-9715' class='srclink' href='../../../src/hoedown/renderer/trace.rs.html#9' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Trace;</pre><div class='docblock'><p>This renderer implements the block handlers
+to make it easy to determine which handlers need to be implemented
+for a given document.</p>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='../../../hoedown/renderer/trait.Render.html' title='hoedown::renderer::Render'>Render</a> for <a class='struct' href='../../../hoedown/renderer/trace/struct.Trace.html' title='hoedown::renderer::trace::Trace'>Trace</a></code></h3><div class='impl-items'><h4 id='method.code_block' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.code_block' class='fnname'>code_block</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, text: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, lang: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.quote_block' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.quote_block' class='fnname'>quote_block</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.header' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.header' class='fnname'>header</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, level: <a href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>)</code></h4>
+<h4 id='method.horizontal_rule' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.horizontal_rule' class='fnname'>horizontal_rule</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.list' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.list' class='fnname'>list</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, flags: <a class='struct' href='../../../hoedown/renderer/list/struct.List.html' title='hoedown::renderer::list::List'>List</a>)</code></h4>
+<h4 id='method.list_item' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.list_item' class='fnname'>list_item</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, flags: <a class='struct' href='../../../hoedown/renderer/list/struct.List.html' title='hoedown::renderer::list::List'>List</a>)</code></h4>
+<h4 id='method.paragraph' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.paragraph' class='fnname'>paragraph</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.table' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.table' class='fnname'>table</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.table_header' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.table_header' class='fnname'>table_header</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.table_body' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.table_body' class='fnname'>table_body</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.table_row' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.table_row' class='fnname'>table_row</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.table_cell' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.table_cell' class='fnname'>table_cell</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, flags: <a class='enum' href='../../../hoedown/renderer/enum.Table.html' title='hoedown::renderer::Table'>Table</a>)</code></h4>
+<h4 id='method.footnotes' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.footnotes' class='fnname'>footnotes</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.footnote_definition' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.footnote_definition' class='fnname'>footnote_definition</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, num: <a href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>)</code></h4>
+<h4 id='method.html_block' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.html_block' class='fnname'>html_block</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, text: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.render' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.render' class='fnname'>render</a>(&amp;mut self, input: &amp;<a class='struct' href='../../../hoedown/struct.Markdown.html' title='hoedown::Markdown'>Markdown</a>) -&gt; <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a></code></h4>
+<h4 id='method.render_to' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.render_to' class='fnname'>render_to</a>(&amp;mut self, input: &amp;<a class='struct' href='../../../hoedown/struct.Markdown.html' title='hoedown::Markdown'>Markdown</a>, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.render_inline' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.render_inline' class='fnname'>render_inline</a>(&amp;mut self, input: &amp;<a class='struct' href='../../../hoedown/struct.Markdown.html' title='hoedown::Markdown'>Markdown</a>) -&gt; <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a></code></h4>
+<h4 id='method.render_inline_to' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.render_inline_to' class='fnname'>render_inline_to</a>(&amp;mut self, input: &amp;<a class='struct' href='../../../hoedown/struct.Markdown.html' title='hoedown::Markdown'>Markdown</a>, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.to_hoedown' class='method'><code>unsafe fn <a href='../../../hoedown/renderer/trait.Render.html#method.to_hoedown' class='fnname'>to_hoedown</a>(&amp;mut self) -&gt; <a class='struct' href='../../../hoedown/ffi/struct.hoedown_renderer.html' title='hoedown::ffi::hoedown_renderer'>hoedown_renderer</a></code></h4>
+<h4 id='method.autolink' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.autolink' class='fnname'>autolink</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, link: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, link_type: <a class='enum' href='../../../hoedown/renderer/enum.AutoLink.html' title='hoedown::renderer::AutoLink'>AutoLink</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.code_span' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.code_span' class='fnname'>code_span</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, text: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.double_emphasis' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.double_emphasis' class='fnname'>double_emphasis</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.emphasis' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.emphasis' class='fnname'>emphasis</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.underline' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.underline' class='fnname'>underline</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.highlight' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.highlight' class='fnname'>highlight</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.quote_span' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.quote_span' class='fnname'>quote_span</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.image' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.image' class='fnname'>image</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, link: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, title: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, alt: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.line_break' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.line_break' class='fnname'>line_break</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.link' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.link' class='fnname'>link</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, link: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, title: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.triple_emphasis' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.triple_emphasis' class='fnname'>triple_emphasis</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.strikethrough' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.strikethrough' class='fnname'>strikethrough</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.superscript' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.superscript' class='fnname'>superscript</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, content: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.footnote_reference' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.footnote_reference' class='fnname'>footnote_reference</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, num: <a href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.math' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.math' class='fnname'>math</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, text: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, displaymode: <a href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.html_span' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.html_span' class='fnname'>html_span</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, text: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.entity' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.entity' class='fnname'>entity</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, text: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.normal_text' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.normal_text' class='fnname'>normal_text</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, text: &amp;<a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>)</code></h4>
+<h4 id='method.before_render' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.before_render' class='fnname'>before_render</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, inline_render: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>)</code></h4>
+<h4 id='method.after_render' class='method'><code>fn <a href='../../../hoedown/renderer/trait.Render.html#method.after_render' class='fnname'>after_render</a>(&amp;mut self, output: &amp;mut <a class='struct' href='../../../hoedown/struct.Buffer.html' title='hoedown::Buffer'>Buffer</a>, inline_render: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>)</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "hoedown";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script async src="../../../search-index.js"></script>
+</body>
+</html>

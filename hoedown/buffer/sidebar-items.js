@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Buffer","Buffer for holding markdown contents"]]});

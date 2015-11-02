@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["open","Opens a browser window at the specified URL in a new process."],["open_specific","Opens a specified browser in a new process."]]});

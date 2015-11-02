@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Router` struct in crate `nickel`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Router">
+
+    <title>nickel::router::router::Router - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>nickel</a>::<wbr><a href='../index.html'>router</a>::<wbr><a href='index.html'>router</a></p><script>window.sidebarCurrent = {name: 'Router', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>nickel</a>::<wbr><a href='../index.html'>router</a>::<wbr><a href='index.html'>router</a>::<wbr><a class='struct' href=''>Router</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-359' class='srclink' href='../../../src/nickel/router/router.rs.html#48-50' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Router&lt;D = <a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt; {
+    // some fields omitted
+}</pre><div class='docblock'><p>The Router&#39;s job is it to hold routes and to resolve them later against
+concrete URLs. The router is also a regular middleware and needs to be
+added to the middleware stack with <code>server.utilize(router)</code>.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;D&gt; <a class='struct' href='../../../nickel/router/router/struct.Router.html' title='nickel::router::router::Router'>Router</a>&lt;D&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../../nickel/router/router/struct.Router.html' title='nickel::router::router::Router'>Router</a>&lt;D&gt;</code></h4>
+<h4 id='method.match_route' class='method'><code>fn <a href='#method.match_route' class='fnname'>match_route</a>&lt;'mw&gt;(&amp;'mw self, method: &amp;<a class='enum' href='../../../hyper/method/enum.Method.html' title='hyper::method::Method'>Method</a>, path: &amp;<a href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../../../nickel/router/router/struct.RouteResult.html' title='nickel::router::router::RouteResult'>RouteResult</a>&lt;'mw, D&gt;&gt;</code></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;D&gt; <a class='trait' href='../../../nickel/router/http_router/trait.HttpRouter.html' title='nickel::router::http_router::HttpRouter'>HttpRouter</a>&lt;D&gt; for <a class='struct' href='../../../nickel/router/router/struct.Router.html' title='nickel::router::router::Router'>Router</a>&lt;D&gt;</code></h3><div class='impl-items'><h4 id='method.add_route' class='method'><code>fn <a href='../../../nickel/router/http_router/trait.HttpRouter.html#method.add_route' class='fnname'>add_route</a>&lt;M: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.Into.html' title='core::convert::Into'>Into</a>&lt;<a class='struct' href='../../../nickel/router/struct.Matcher.html' title='nickel::router::Matcher'>Matcher</a>&gt;, H: <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt;&gt;(&amp;mut self, method: <a class='enum' href='../../../hyper/method/enum.Method.html' title='hyper::method::Method'>Method</a>, matcher: M, handler: H) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.get' class='method'><code>fn <a href='../../../nickel/router/http_router/trait.HttpRouter.html#method.get' class='fnname'>get</a>&lt;M: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.Into.html' title='core::convert::Into'>Into</a>&lt;<a class='struct' href='../../../nickel/router/struct.Matcher.html' title='nickel::router::Matcher'>Matcher</a>&gt;, H: <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt;&gt;(&amp;mut self, matcher: M, handler: H) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.post' class='method'><code>fn <a href='../../../nickel/router/http_router/trait.HttpRouter.html#method.post' class='fnname'>post</a>&lt;M: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.Into.html' title='core::convert::Into'>Into</a>&lt;<a class='struct' href='../../../nickel/router/struct.Matcher.html' title='nickel::router::Matcher'>Matcher</a>&gt;, H: <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt;&gt;(&amp;mut self, matcher: M, handler: H) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.put' class='method'><code>fn <a href='../../../nickel/router/http_router/trait.HttpRouter.html#method.put' class='fnname'>put</a>&lt;M: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.Into.html' title='core::convert::Into'>Into</a>&lt;<a class='struct' href='../../../nickel/router/struct.Matcher.html' title='nickel::router::Matcher'>Matcher</a>&gt;, H: <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt;&gt;(&amp;mut self, matcher: M, handler: H) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.delete' class='method'><code>fn <a href='../../../nickel/router/http_router/trait.HttpRouter.html#method.delete' class='fnname'>delete</a>&lt;M: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.Into.html' title='core::convert::Into'>Into</a>&lt;<a class='struct' href='../../../nickel/router/struct.Matcher.html' title='nickel::router::Matcher'>Matcher</a>&gt;, H: <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt;&gt;(&amp;mut self, matcher: M, handler: H) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.options' class='method'><code>fn <a href='../../../nickel/router/http_router/trait.HttpRouter.html#method.options' class='fnname'>options</a>&lt;M: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.Into.html' title='core::convert::Into'>Into</a>&lt;<a class='struct' href='../../../nickel/router/struct.Matcher.html' title='nickel::router::Matcher'>Matcher</a>&gt;, H: <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt;&gt;(&amp;mut self, matcher: M, handler: H) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.patch' class='method'><code>fn <a href='../../../nickel/router/http_router/trait.HttpRouter.html#method.patch' class='fnname'>patch</a>&lt;M: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.Into.html' title='core::convert::Into'>Into</a>&lt;<a class='struct' href='../../../nickel/router/struct.Matcher.html' title='nickel::router::Matcher'>Matcher</a>&gt;, H: <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt;&gt;(&amp;mut self, matcher: M, handler: H) -&gt; &amp;mut Self</code></h4>
+</div><h3 class='impl'><code>impl&lt;D: 'static&gt; <a class='trait' href='../../../nickel/trait.Middleware.html' title='nickel::Middleware'>Middleware</a>&lt;D&gt; for <a class='struct' href='../../../nickel/router/router/struct.Router.html' title='nickel::router::router::Router'>Router</a>&lt;D&gt;</code></h3><div class='impl-items'><h4 id='method.invoke' class='method'><code>fn <a href='../../../nickel/trait.Middleware.html#method.invoke' class='fnname'>invoke</a>&lt;'mw, 'conn&gt;(&amp;'mw self, req: &amp;mut <a class='struct' href='../../../nickel/struct.Request.html' title='nickel::Request'>Request</a>&lt;'mw, 'conn, D&gt;, res: <a class='struct' href='../../../nickel/struct.Response.html' title='nickel::Response'>Response</a>&lt;'mw, D&gt;) -&gt; <a class='type' href='../../../nickel/type.MiddlewareResult.html' title='nickel::MiddlewareResult'>MiddlewareResult</a>&lt;'mw, D&gt;</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "nickel";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script async src="../../../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Trace","This renderer implements the block handlers to make it easy to determine which handlers need to be implemented for a given document."]]});

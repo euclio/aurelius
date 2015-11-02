@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["message","Provides a trait for WebSocket messages"],["receiver","Provides a trait for receiving data frames and messages."],["sender","Provides a trait for sending data frames and messages."],["util","Utility functions for various portions of Rust-WebSocket."]]});

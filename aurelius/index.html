@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `aurelius` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, aurelius">
+
+    <title>aurelius - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'aurelius', ty: 'mod', relpath: '../'};</script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>aurelius</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-0' class='srclink' href='../src/aurelius/lib.rs.html#1-157' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p><a href="https://github.com/euclio/aurelius">aurelius</a> is a complete solution for rendering and
+previewing markdown.</p>
+
+<p>This crate provides a server that can render and update an HTML preview of markdown without a
+client-side refresh. The server listens for both WebSocket and HTTP connections on arbitrary
+ports. Upon receiving an HTTP request, the server renders a page containing a markdown preview.
+Client-side JavaScript then initiates a WebSocket connection which allows the server to push
+changes to the client.</p>
+
+<p>This crate was designed to power <a href="https://github.com/euclio/vim-markdown-composer">vim-markdown-composer</a>, a markdown preview plugin for
+<a href="http://neovim.io">Neovim</a>, but it may be used to implement similar plugins for any editor.
+See <a href="https://github.com/euclio/vim-markdown-composer">vim-markdown-composer</a> for a usage example.</p>
+
+<p>aurelius follows stable Rust. However, the API currently unstable and may change without
+warning.</p>
+
+<h1 id="acknowledgments" class='section-header'><a
+                           href="#acknowledgments">Acknowledgments</a></h1>
+<p>This crate is inspired by suan&#39;s
+<a href="https://github.com/suan/instant-markdown-d">instant-markdown-d</a>.</p>
+
+<h1 id="why-the-name?" class='section-header'><a
+                           href="#why-the-name?">Why the name?</a></h1>
+<p>&quot;Aurelius&quot; is a Roman <em>gens</em> (family name) shared by many famous Romans, including emperor
+Marcus Aurelius, one of the &quot;Five Good Emperors.&quot; The gens itself originates from the Latin
+<em>aureus</em> meaning &quot;golden.&quot; Also, tell me that &quot;Markdown Aurelius&quot; isn&#39;t a great pun.</p>
+
+<p><cite><a href="https://en.wikipedia.org/wiki/Aurelia_(gens)">Aurelia (gens) on Wikipedia</a></cite>.</p>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='browser/index.html'
+                               title='aurelius::browser'>browser</a></td>
+                        <td class='docblock short'>
+                             <p>Functions for interacting with browser processes.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='markdown/index.html'
+                               title='aurelius::markdown'>markdown</a></td>
+                        <td class='docblock short'>
+                             <p>Functions for rendering markdown.</p>
+
+                        </td>
+                    </tr>
+                </table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.Server.html'
+                               title='aurelius::Server'>Server</a></td>
+                        <td class='docblock short'>
+                             <p>The <code>Server</code> type constructs a new markdown preview server.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.ServerHandle.html'
+                               title='aurelius::ServerHandle'>ServerHandle</a></td>
+                        <td class='docblock short'>
+                             <p>Representation of the running markdown server.</p>
+
+                        </td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "aurelius";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>

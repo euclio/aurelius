@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["message_from_data","Creates a Message from an Opcode and data."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["ESCAPE","Ignore raw html blocks and escape html spans"],["HARD_WRAP","Insert breaks inside paragraphs for every newline"],["SKIP_HTML","Ignore raw html"],["USE_XHTML","Output XHTML"]],"fn":[["smartypants","Performs \"smartypants\" processing of the provided buffer."]],"struct":[["Flags","Information about a list item"],["Html","HTML renderer"]]});

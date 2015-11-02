@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["iter","produces an Iter instance to iterate over open ports"],["open","Returns the next available network port on the current host"]],"struct":[["Iter","An iterator over open ports"]]});
