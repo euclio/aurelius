@@ -24,7 +24,7 @@ pub fn open(url: &str) -> Result<Child> {
     let (browser, args) = if cfg!(target_os = "linux") {
         ("xdg-open", None)
     } else if cfg!(target_os = "macos") {
-        ("open", None)
+        ("open", Some(vec!["-g"]))
     } else if cfg!(target_os = "windows") {
         // `start` requires an empty string as its first parameter.
         ("start", Some(vec![""]))
