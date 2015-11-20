@@ -28,6 +28,7 @@
 //! [vim-markdown-composer]: https://github.com/euclio/vim-markdown-composer
 
 extern crate hoedown;
+extern crate porthole;
 extern crate url;
 extern crate uuid;
 extern crate websocket as websockets;
@@ -57,14 +58,14 @@ impl ServerHandle {
     pub fn websocket_port(&self) -> u16 {
         let ws_server_lock = self.server.websocket_server.clone();
         let ws_server = ws_server_lock.read().unwrap();
-        ws_server.socket_addr().unwrap().port()
+        ws_server.port
     }
 
     /// Returns the port that the HTTP server is listening on.
     pub fn http_port(&self) -> u16 {
         let http_server_lock = self.server.http_server.clone();
         let http_server = http_server_lock.read().unwrap();
-        http_server.socket_addr().unwrap().port()
+        http_server.port
     }
 
     /// Send a markdown string to be rendered by the server.
@@ -81,6 +82,7 @@ impl ServerHandle {
 ///
 /// The server will listen for HTTP and WebSocket connections on arbitrary ports.
 pub struct Server {
+    websocket_port: u16,
     http_server: Arc<RwLock<HttpServer>>,
     websocket_server: Arc<RwLock<WebSocketServer>>,
     initial_markdown: Option<String>,
@@ -92,10 +94,14 @@ impl Server {
     ///
     /// Builder methods are provided to configure the server before starting it.
     pub fn new() -> Server {
-        let websocket_server = WebSocketServer::new(("localhost", 0));
-        let http_server = HttpServer::new(("localhost", 0));
+        let websocket_port = porthole::open().unwrap();
+        let websocket_server = WebSocketServer::new(websocket_port);
+
+        let http_port = porthole::open().unwrap();
+        let http_server = HttpServer::new(http_port);
 
         Server {
+            websocket_port: websocket_port,
             http_server: Arc::new(RwLock::new(http_server)),
             websocket_server: Arc::new(RwLock::new(websocket_server)),
             initial_markdown: None,
@@ -121,7 +127,6 @@ impl Server {
     /// Starts the server, returning a `ServerHandle` to communicate with it.
     pub fn start(self) -> ServerHandle {
         let websocket_server = self.websocket_server.clone();
-        let websocket_port = websocket_server.read().unwrap().socket_addr().unwrap().port();
 
         // Start websocket server
         thread::spawn(move || {
@@ -130,6 +135,7 @@ impl Server {
         });
 
         let http_server = self.http_server.clone();
+        let websocket_port = self.websocket_port;
 
         // Start http server
         let initial_markdown = match self.initial_markdown {
