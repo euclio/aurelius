@@ -1,6 +1,8 @@
 //! Contains the WebSocket server component.
 
 use std::collections::HashMap;
+use std::io::Result;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::mpsc::channel;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -15,18 +17,15 @@ use websockets::{Message, Sender, Receiver};
 ///
 /// Manages WebSocket connections from clients of the HTTP server.
 pub struct Server {
-
-    /// The port that the server is listening on.
-    pub port: u16,
+    socket_addr: SocketAddr,
     active_connections: Arc<Mutex<HashMap<Uuid, mpsc::Sender<Message>>>>,
 }
 
 impl Server {
-
-    /// Creates a new server that listens on port `port`.
-    pub fn new(port: u16) -> Server {
+    /// Creates a new server that listens on a socket address.
+    pub fn new<A>(addr: A) -> Server where A: ToSocketAddrs {
         Server {
-            port: port,
+            socket_addr: addr.to_socket_addrs().unwrap().next().unwrap(),
             active_connections: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -47,10 +46,14 @@ impl Server {
         }
     }
 
+    pub fn socket_addr(&self) -> Result<SocketAddr> {
+        Ok(self.socket_addr)
+    }
+
     /// Listen for WebSocket connections.
     fn listen_forever(&self) {
-        let server = WebSocketServer::bind(("localhost", self.port)).unwrap();
-        info!("WebSockets listening on {}", self.port);
+        let server = WebSocketServer::bind(self.socket_addr).unwrap();
+        info!("WebSockets listening on {}", self.socket_addr.port());
 
         for connection in server {
             let active_connections = self.active_connections.clone();

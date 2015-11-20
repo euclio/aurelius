@@ -1,6 +1,8 @@
 //! Contains the HTTP server component.
 
 use std::collections::HashMap;
+use std::io::Result;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::Path;
 
 use nickel::{Nickel,StaticFilesHandler};
@@ -9,18 +11,16 @@ use markdown;
 
 /// The HTTP server.
 ///
-/// The server listens on the provided port, rendering the markdown preview when a GET request is
-/// received at the server root.
+/// The server listens on the provided socket address, rendering the markdown preview when a GET
+/// request is received at the server root.
 pub struct Server {
-
-    /// The port that the server is listening on.
-    pub port: u16,
+    socket_addr: SocketAddr,
 }
 
 impl Server {
-    /// Creates a new server that listens on port `port`.
-    pub fn new(port: u16) -> Server {
-        Server { port: port }
+    /// Creates a new server that listens on a socket address.
+    pub fn new<A>(addr: A) -> Server where A: ToSocketAddrs {
+        Server { socket_addr: addr.to_socket_addrs().unwrap().next().unwrap() }
     }
 
     /// Starts the server.
@@ -58,6 +58,11 @@ impl Server {
         assert!(static_dir.is_absolute());
         server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
 
-        server.listen(("localhost", self.port));
+        server.listen(self.socket_addr);
+    }
+
+    /// Returns the socket address that the server is listening on.
+    pub fn socket_addr(&self) -> Result<SocketAddr> {
+        Ok(self.socket_addr)
     }
 }
