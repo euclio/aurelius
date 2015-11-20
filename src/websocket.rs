@@ -8,8 +8,9 @@ use std::thread;
 
 use uuid::Uuid;
 use websockets::Server as WebSocketServer;
-use websockets::header::WebSocketProtocol;
 use websockets::{Message, Sender, Receiver};
+use websockets::header::WebSocketProtocol;
+use websockets::message::Type;
 
 /// The WebSocket server.
 ///
@@ -18,7 +19,7 @@ pub struct Server {
 
     /// The port that the server is listening on.
     pub port: u16,
-    active_connections: Arc<Mutex<HashMap<Uuid, mpsc::Sender<Message>>>>,
+    active_connections: Arc<Mutex<HashMap<Uuid, mpsc::Sender<String>>>>,
 }
 
 impl Server {
@@ -43,7 +44,7 @@ impl Server {
         debug!("received html: {}", &html);
         for (uuid, sender) in self.active_connections.lock().unwrap().iter_mut() {
             debug!("notifying websocket {}", uuid);
-            sender.send(Message::Text(html.clone())).unwrap();
+            sender.send(html.to_owned()).unwrap();
         }
     }
 
@@ -94,45 +95,38 @@ impl Server {
                 // Start a separate thread to manage sending messages to the client.
                 thread::spawn(move || {
                     loop {
-                        let message = match rx.recv() {
+                        let message: String = match rx.recv() {
                             Ok(m) => m,
                             Err(e) => {
                                 debug!("Send loop got error: {:?}", e);
                                 return;
                             }
                         };
-                        match message {
-                            Message::Close(_) => {
-                                let _ = sender.send_message(message);
-                                return;
-                            }
-                            _ => ()
-                        }
-                        sender.send_message(message).unwrap();
+                        tx_2.send(message).unwrap();
                     }
                 });
 
                 // Use this thread for handling messages from the client.
                 for message in receiver.incoming_messages() {
-                    let message = match message {
+                    let message: Message = match message {
                         Ok(m) => {
                             debug!("Got message {:?}", m);
                             m
                         },
                         Err(e) => {
                             debug!("Receive loop got error: {}", e);
-                            tx_2.send(Message::Close(None)).unwrap();
+                            sender.send_message(&Message::close()).unwrap();
                             return;
                         }
                     };
-                    match message {
-                        Message::Close(_) => {
+                    match message.opcode {
+                        Type::Close => {
                             // The client has closed the connection.
-                            tx_2.send(Message::Close(None)).unwrap();
+                            sender.send_message(&Message::close()).unwrap();
                             active_connections.lock().unwrap().remove(&uuid);
                             return;
-                        }
-                        Message::Ping(data) => match tx_2.send(Message::Pong(data)) {
+                        },
+                        Type::Ping => match sender.send_message(&Message::pong(message.payload)) {
                             Ok(()) => (),
                             Err(e) => {
                                 debug!("Receive Loop got error: {:?}", e);
