@@ -1,6 +1,7 @@
 //! Contains the HTTP server component.
 
 use std::collections::HashMap;
+use std::env;
 use std::path::Path;
 
 use nickel::{Nickel,StaticFilesHandler};
@@ -41,11 +42,19 @@ impl Server {
 
         // We need to figure out the crate root, so we can pass absolute paths into the nickel
         // APIs.
-        let root = Path::new(file!()).parent().unwrap().parent().unwrap();
+        let root = {
+            let crate_root = Path::new(file!()).parent().unwrap().parent().unwrap();
+            if crate_root.is_absolute() {
+                crate_root.to_owned()
+            } else {
+                let mut current_dir = env::current_dir().unwrap();
+                current_dir.push(crate_root);
+                current_dir.to_owned()
+            }
+        };
 
         let mut markdown_view = root.to_path_buf();
         markdown_view.push("templates/markdown_view.html");
-        assert!(markdown_view.is_absolute());
 
         server.utilize(router! {
             get "/" => |_, response| {

@@ -3,32 +3,33 @@
 use std::collections::HashMap;
 use std::sync::mpsc::channel;
 use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 
 use uuid::Uuid;
 use websockets::Server as WebSocketServer;
-use websockets::{Message, Sender, Receiver};
+use websockets::{Message, Sender};
 use websockets::header::WebSocketProtocol;
-use websockets::message::Type;
 
 /// The WebSocket server.
 ///
 /// Manages WebSocket connections from clients of the HTTP server.
 pub struct Server {
-
     /// The port that the server is listening on.
     pub port: u16,
     active_connections: Arc<Mutex<HashMap<Uuid, mpsc::Sender<String>>>>,
+
+    /// Stores the last markdown received, so that we have something to send to new connections.
+    last_markdown: Arc<RwLock<String>>,
 }
 
 impl Server {
-
     /// Creates a new server that listens on port `port`.
     pub fn new(port: u16) -> Server {
         Server {
             port: port,
             active_connections: Arc::new(Mutex::new(HashMap::new())),
+            last_markdown: Arc::new(RwLock::new(String::new())),
         }
     }
 
@@ -41,9 +42,16 @@ impl Server {
 
     /// Sends HTML data to all open WebSocket connections on the server.
     pub fn notify(&self, html: String) {
+        let last_markdown_lock = self.last_markdown.clone();
+
+        {
+            let mut last_markdown = last_markdown_lock.write().unwrap();
+            *last_markdown = html;
+        }
+
         for (uuid, sender) in self.active_connections.lock().unwrap().iter_mut() {
             debug!("notifying websocket {}", uuid);
-            sender.send(html.to_owned()).unwrap();
+            sender.send(last_markdown_lock.read().unwrap().to_owned()).unwrap();
         }
     }
 
@@ -54,6 +62,7 @@ impl Server {
 
         for connection in server {
             let active_connections = self.active_connections.clone();
+            let last_markdown_lock = self.last_markdown.clone();
 
             // Spawn a new thread for each new connection.
             thread::spawn(move || {
@@ -70,97 +79,29 @@ impl Server {
                     }
                 }
 
-                let mut client = response.send().unwrap();
-
-                let ip = client.get_mut_sender()
-                    .get_mut()
-                    .peer_addr()
-                    .unwrap();
-
-                info!("Connection from {}", ip);
+                let client = response.send().unwrap();
 
                 // Create the send and recieve channdels for the websocket.
-                let (mut sender, mut receiver) = client.split();
+                let (mut sender, _) = client.split();
 
-                // Create a two tranmitters from this channel so we can send messages from other
-                // threads.
-                // Created senders that will send markdown between threads
+                // Create senders that will send markdown between threads.
                 let (md_tx, md_rx) = channel();
-                let (message_tx, message_rx) = channel();
-                let message_tx_2 = message_tx.clone();
 
                 // Store the sender in the active connections.
                 let uuid = Uuid::new_v4();
                 active_connections.lock().unwrap().insert(uuid, md_tx);
 
-                // Start a separate thread to manage sending messages to the client.
-                thread::spawn(move || {
-                    loop {
-                        match md_rx.recv() {
-                            Ok(m) => message_tx.send(Message::text(m)).unwrap(),
-                            Err(e) => {
-                                debug!("Send loop got error: {:?}", e);
-                                return;
-                            }
-                        };
-                    }
-                });
+                let initial_markdown = last_markdown_lock.read().unwrap().to_owned();
 
-                // Websocket send loop
-                thread::spawn(move || {
-                    loop {
-                        let message: Message = match message_rx.recv() {
-                            Ok(m) => m,
-                            Err(e) => {
-                                debug!("Send Loop: {:?}", e);
-                                return;
-                            }
-                        };
-                        match message.opcode {
-                            Type::Close => {
-                                let _ = sender.send_message(&message);
-                                // If it's a close message, just send it and then return.
-                                return;
-                            },
-                            _ => (),
-                        }
-                        // Send the message
-                        match sender.send_message(&message) {
-                            Ok(()) => (),
-                            Err(e) => {
-                                debug!("Send Loop: {:?}", e);
-                                let _ = sender.send_message(&Message::close());
-                                return;
-                            }
-                        }
-                    }
-                });
+                sender.send_message(&Message::text(initial_markdown)).unwrap();
 
-                // Websocket receive loop
-                for message in receiver.incoming_messages() {
-                    let message: Message = match message {
-                        Ok(m) => m,
+                for markdown in md_rx.recv() {
+                    match sender.send_message(&Message::text(markdown)) {
+                        Ok(()) => (),
                         Err(e) => {
-                            debug!("Receive loop got error: {}", e);
-                            message_tx_2.send(Message::close()).unwrap();
-                            return;
+                            debug!("Send Loop: {:?}", e);
+                            let _ = sender.send_message(&Message::close());
                         }
-                    };
-                    match message.opcode {
-                        Type::Close => {
-                            // The client has closed the connection.
-                            message_tx_2.send(Message::close()).unwrap();
-                            active_connections.lock().unwrap().remove(&uuid);
-                            return;
-                        },
-                        Type::Ping => match message_tx_2.send(Message::pong(message.payload)) {
-                            Ok(()) => (),
-                            Err(e) => {
-                                debug!("Receive Loop got error: {:?}", e);
-                                return;
-                            }
-                        },
-                        _ => () // Ignore all other messages.
                     }
                 }
             });
