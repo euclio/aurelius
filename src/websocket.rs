@@ -8,8 +8,9 @@ use std::thread;
 
 use uuid::Uuid;
 use websockets::Server as WebSocketServer;
-use websockets::{Message, Sender};
+use websockets::{Message, Sender, Receiver};
 use websockets::header::WebSocketProtocol;
+use websockets::message::Type;
 
 /// The WebSocket server.
 ///
@@ -82,28 +83,54 @@ impl Server {
                 let client = response.send().unwrap();
 
                 // Create the send and recieve channdels for the websocket.
-                let (mut sender, _) = client.split();
+                let (mut sender, mut receiver) = client.split();
 
                 // Create senders that will send markdown between threads.
+                let (message_tx, message_rx) = channel();
                 let (md_tx, md_rx) = channel();
 
                 // Store the sender in the active connections.
                 let uuid = Uuid::new_v4();
-                active_connections.lock().unwrap().insert(uuid, md_tx);
+                active_connections.lock().unwrap().insert(uuid, md_tx.clone());
 
                 let initial_markdown = last_markdown_lock.read().unwrap().to_owned();
 
-                sender.send_message(&Message::text(initial_markdown)).unwrap();
+                md_tx.send(initial_markdown).unwrap();
 
-                for markdown in md_rx.recv() {
-                    match sender.send_message(&Message::text(markdown)) {
-                        Ok(()) => (),
-                        Err(e) => {
-                            debug!("Send Loop: {:?}", e);
-                            let _ = sender.send_message(&Message::close());
+                // Message receiver
+                let ws_message_tx = message_tx.clone();
+                let receive_loop = thread::spawn(move || {
+                    for message in receiver.incoming_messages() {
+                        let message: Message = message.unwrap();
+
+                        match message.opcode {
+                            Type::Close => {
+                                let message = Message::close();
+                                ws_message_tx.send(message).unwrap();
+                                return;
+                            },
+                            Type::Ping => {
+                                let message = Message::pong(message.payload);
+                                ws_message_tx.send(message).unwrap();
+                            }
+                            _ => ws_message_tx.send(message).unwrap(),
                         }
                     }
+                });
+
+                let send_loop = thread::spawn(move || {
+                    for message in message_rx.recv() {
+                        let message: Message = message;
+                        sender.send_message(&message).unwrap();
+                    }
+                });
+
+                for markdown in md_rx.recv() {
+                    message_tx.send(Message::text(markdown)).unwrap();
                 }
+
+                let _ = send_loop.join();
+                let _ = receive_loop.join();
             });
         }
     }

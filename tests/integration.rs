@@ -36,18 +36,16 @@ fn test_multiple_send() {
 
     let handle = thread::spawn(move || {
         server.send_markdown("# Hello world!");
-
-        // FIXME: There are some race conditions here...
-        thread::sleep_ms(100);
-
         server.send_markdown("# Goodbye world!");
     });
 
-    let message: Message = receiver.recv_message().unwrap();
-    assert_eq!(String::from_utf8(message.payload.into_owned()).unwrap(), "<h1>Hello world!</h1>\n");
+    let mut messages = receiver.incoming_messages();
 
-    let message: Message = receiver.recv_message().unwrap();
-    assert_eq!(String::from_utf8(message.payload.into_owned()).unwrap(), "<h1>Goodbye world!</h1>\n");
+    let hello_message: Message = messages.next().unwrap().unwrap();
+    assert_eq!(String::from_utf8(hello_message.payload.into_owned()).unwrap(), "<h1>Hello world!</h1>\n");
+
+    let goodbye_message: Message = messages.next().unwrap().unwrap();
+    assert_eq!(String::from_utf8(goodbye_message.payload.into_owned()).unwrap(), "<h1>Goodbye world!</h1>\n");
 
     handle.join().unwrap();
 }
