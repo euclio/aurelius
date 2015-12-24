@@ -15,23 +15,23 @@ use url::Url;
 /// | Platform | Program    |
 /// | -------- | ---------- |
 /// | Linux    | `xdg-open` |
-/// | OS X     | `open`     |
+/// | OS X     | `open -g   |
 /// | Windows  | `start`    |
 ///
 /// # Panics
 /// Panics if called on an unsupported operating system.
 pub fn open(url: &str) -> Result<Child> {
     let (browser, args) = if cfg!(target_os = "linux") {
-        ("xdg-open", None)
+        ("xdg-open", vec![])
     } else if cfg!(target_os = "macos") {
-        ("open", Some(vec!["-g"]))
+        ("open", vec!["-g"])
     } else if cfg!(target_os = "windows") {
         // `start` requires an empty string as its first parameter.
-        ("start", Some(vec![""]))
+        ("start", vec![""])
     } else {
         panic!("unsupported OS")
     };
-    open_specific(url, &browser, args)
+    open_specific(url, &browser, &args)
 }
 
 /// Opens a specified browser in a new process.
@@ -40,13 +40,13 @@ pub fn open(url: &str) -> Result<Child> {
 /// argument.
 ///
 /// Returns an `io::Result` containing the child process.
-pub fn open_specific(url: &str, browser: &str, browser_args: Option<Vec<&str>>) -> Result<Child> {
+pub fn open_specific(url: &str, browser: &str, browser_args: &[&str]) -> Result<Child> {
     let url = Url::parse(url).unwrap();
     debug!("starting process '{:?}' with url {:?}", browser, url);
 
     Command::new(browser)
+            .args(browser_args)
             .arg(url.to_string())
-            .args(&browser_args.unwrap_or(Vec::new()))
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
