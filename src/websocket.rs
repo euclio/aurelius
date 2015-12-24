@@ -101,7 +101,13 @@ impl Server {
                 let ws_message_tx = message_tx.clone();
                 let receive_loop = thread::spawn(move || {
                     for message in receiver.incoming_messages() {
-                        let message: Message = message.unwrap();
+                        let message: Message = match message {
+                            Ok(m) => m,
+                            Err(_) => {
+                                let _ = ws_message_tx.send(Message::close());
+                                return;
+                            }
+                        };
 
                         match message.opcode {
                             Type::Close => {
@@ -119,13 +125,13 @@ impl Server {
                 });
 
                 let send_loop = thread::spawn(move || {
-                    for message in message_rx.recv() {
+                    for message in message_rx.iter() {
                         let message: Message = message;
                         sender.send_message(&message).unwrap();
                     }
                 });
 
-                for markdown in md_rx.recv() {
+                for markdown in md_rx.iter() {
                     message_tx.send(Message::text(markdown)).unwrap();
                 }
 

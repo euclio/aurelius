@@ -2,7 +2,6 @@ extern crate aurelius;
 extern crate websocket;
 
 use std::io::prelude::*;
-use std::thread;
 
 use aurelius::Server;
 use websocket::{Client, Message, Receiver};
@@ -33,19 +32,13 @@ fn test_multiple_send() {
     let response = request.send().unwrap();
     response.validate().unwrap();
     let (_, mut receiver) = response.begin().split();
-
-    let handle = thread::spawn(move || {
-        server.send_markdown("# Hello world!");
-        server.send_markdown("# Goodbye world!");
-    });
-
     let mut messages = receiver.incoming_messages();
 
+    server.send_markdown("# Hello world!");
     let hello_message: Message = messages.next().unwrap().unwrap();
     assert_eq!(String::from_utf8(hello_message.payload.into_owned()).unwrap(), "<h1>Hello world!</h1>\n");
 
+    server.send_markdown("# Goodbye world!");
     let goodbye_message: Message = messages.next().unwrap().unwrap();
     assert_eq!(String::from_utf8(goodbye_message.payload.into_owned()).unwrap(), "<h1>Goodbye world!</h1>\n");
-
-    handle.join().unwrap();
 }
