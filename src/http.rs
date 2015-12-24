@@ -67,6 +67,6 @@ impl Server {
         assert!(static_dir.is_absolute());
         server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
 
-        server.listen(("localhost", self.port));
+        server.listen(("0.0.0.0", self.port));
     }
 }

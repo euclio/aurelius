@@ -57,7 +57,7 @@ impl Server {
 
     /// Listen for WebSocket connections.
     fn listen_forever(&self) {
-        let server = WebSocketServer::bind(("localhost", self.port)).unwrap();
+        let server = WebSocketServer::bind(("0.0.0.0", self.port)).unwrap();
         info!("WebSockets listening on {}", self.port);
 
         for connection in server {

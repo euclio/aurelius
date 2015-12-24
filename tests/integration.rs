@@ -11,7 +11,7 @@ use websocket::client::request::Url;
 #[test]
 fn test_initial_send() {
     let server = Server::new().start();
-    let url = Url::parse(&format!("ws://localhost:{}", server.websocket_port())).unwrap();
+    let url = Url::parse(&format!("ws://0.0.0.0:{}", server.websocket_port())).unwrap();
 
     let request = Client::connect(&url).unwrap();
     let response = request.send().unwrap();
@@ -27,7 +27,7 @@ fn test_initial_send() {
 #[test]
 fn test_multiple_send() {
     let server = Server::new().start();
-    let url = Url::parse(&format!("ws://localhost:{}", server.websocket_port())).unwrap();
+    let url = Url::parse(&format!("ws://0.0.0.0:{}", server.websocket_port())).unwrap();
 
     let request = Client::connect(&url).unwrap();
     let response = request.send().unwrap();
