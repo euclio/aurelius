@@ -33,8 +33,10 @@ extern crate url;
 extern crate uuid;
 extern crate websocket as websockets;
 
-#[macro_use] extern crate log;
-#[macro_use] extern crate nickel;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate nickel;
 
 pub mod browser;
 pub mod markdown;
@@ -140,11 +142,11 @@ impl Server {
         // Start http server
         let initial_markdown = match self.initial_markdown {
             Some(ref markdown) => markdown.clone(),
-            None => "".to_string()
+            None => "".to_string(),
         };
         let highlight_theme = match self.highlight_theme {
             Some(ref theme) => theme.clone(),
-            None => "github".to_string()
+            None => "github".to_string(),
         };
         thread::spawn(move || {
             let server = http_server.read().unwrap();

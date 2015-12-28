@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::env;
 use std::path::Path;
 
-use nickel::{Nickel,StaticFilesHandler};
+use nickel::{Nickel, StaticFilesHandler};
 
 use markdown;
 
@@ -13,7 +13,6 @@ use markdown;
 /// The server listens on the provided port, rendering the markdown preview when a GET request is
 /// received at the server root.
 pub struct Server {
-
     /// The port that the server is listening on.
     pub port: u16,
 }

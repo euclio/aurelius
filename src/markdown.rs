@@ -12,8 +12,7 @@ use hoedown::{AUTOLINK, FENCED_CODE, TABLES};
 /// - Fenced code blocks
 /// - Tables
 pub fn to_html(markdown: &str) -> String {
-    let doc = Markdown::new(markdown)
-                        .extensions(AUTOLINK | FENCED_CODE | TABLES);
+    let doc = Markdown::new(markdown).extensions(AUTOLINK | FENCED_CODE | TABLES);
     let mut html = html::Html::new(html::Flags::empty(), 0);
     html.render(&doc).to_str().unwrap().to_string()
 }

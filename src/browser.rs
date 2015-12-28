@@ -45,9 +45,9 @@ pub fn open_specific(url: &str, browser: &str, browser_args: &[&str]) -> Result<
     debug!("starting process '{:?}' with url {:?}", browser, url);
 
     Command::new(browser)
-            .args(browser_args)
-            .arg(url.to_string())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
+        .args(browser_args)
+        .arg(url.to_string())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
 }

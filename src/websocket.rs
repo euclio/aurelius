@@ -114,7 +114,7 @@ impl Server {
                                 let message = Message::close();
                                 ws_message_tx.send(message).unwrap();
                                 return;
-                            },
+                            }
                             Type::Ping => {
                                 let message = Message::pong(message.payload);
                                 ws_message_tx.send(message).unwrap();
