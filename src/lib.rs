@@ -27,10 +27,12 @@
 //!
 //! [vim-markdown-composer]: https://github.com/euclio/vim-markdown-composer
 
+#![deny(missing_docs)]
+
+extern crate chan;
 extern crate hoedown;
 extern crate porthole;
 extern crate url;
-extern crate uuid;
 extern crate websocket as websockets;
 
 #[macro_use]
@@ -44,116 +46,94 @@ pub mod markdown;
 mod http;
 mod websocket;
 
-use http::Server as HttpServer;
-use websocket::Server as WebSocketServer;
-
+use std::net::SocketAddr;
+use std::io;
 use std::sync::{Arc, RwLock};
+use std::sync::mpsc::{self, Sender};
 use std::thread;
 
-/// Representation of the running markdown server.
-pub struct ServerHandle {
-    server: Server,
-}
-
-impl ServerHandle {
-    /// Returns the port that the WebSocket server is listening on.
-    pub fn websocket_port(&self) -> u16 {
-        let ws_server_lock = self.server.websocket_server.clone();
-        let ws_server = ws_server_lock.read().unwrap();
-        ws_server.port
-    }
-
-    /// Returns the port that the HTTP server is listening on.
-    pub fn http_port(&self) -> u16 {
-        let http_server_lock = self.server.http_server.clone();
-        let http_server = http_server_lock.read().unwrap();
-        http_server.port
-    }
-
-    /// Send a markdown string to be rendered by the server.
-    ///
-    /// The HTML will then be sent to all websocket connections.
-    pub fn send_markdown(&self, markdown: &str) {
-        let ws_server_lock = self.server.websocket_server.clone();
-        let ws_server = ws_server_lock.read().unwrap();
-        ws_server.notify(markdown::to_html(markdown));
-    }
-}
+use http::Server as HttpServer;
+use websocket::Server as WebSocketServer;
 
 /// The `Server` type constructs a new markdown preview server.
 ///
 /// The server will listen for HTTP and WebSocket connections on arbitrary ports.
 pub struct Server {
-    websocket_port: u16,
     http_server: Arc<RwLock<HttpServer>>,
-    websocket_server: Arc<RwLock<WebSocketServer>>,
-    initial_markdown: Option<String>,
-    highlight_theme: Option<String>,
+    websocket_server: WebSocketServer,
+    config: Config,
+}
+
+/// Configuration for the markdown server.
+#[derive(Debug, Default, Clone)]
+pub struct Config {
+    /// The initial markdown to render when starting the server.
+    pub initial_markdown: String,
+
+    /// The syntax highlighting theme to use.
+    pub highlight_theme: String,
 }
 
 impl Server {
     /// Creates a new markdown preview server.
-    ///
-    /// Builder methods are provided to configure the server before starting it.
     pub fn new() -> Server {
-        let websocket_port = porthole::open().unwrap();
-        let websocket_server = WebSocketServer::new(websocket_port);
+        Self::new_with_config(Config { ..Default::default() })
+    }
 
+    /// Creates a new configuration with the config struct.
+    ///
+    /// # Example
+    /// ```
+    /// use std::default::Default;
+    /// use aurelius::{Config, Server};
+    ///
+    /// let server = Server::new_with_config(Config {
+    ///     highlight_theme: "github".to_owned(), .. Default::default()
+    /// });
+    /// ```
+    pub fn new_with_config(config: Config) -> Server {
         let http_port = porthole::open().unwrap();
         let http_server = HttpServer::new(http_port);
 
         Server {
-            websocket_port: websocket_port,
             http_server: Arc::new(RwLock::new(http_server)),
-            websocket_server: Arc::new(RwLock::new(websocket_server)),
-            initial_markdown: None,
-            highlight_theme: None,
+            websocket_server: WebSocketServer::new(("localhost", 0)),
+            config: config,
         }
     }
 
-    /// Sets the markdown that the server should display when the first connection is received.
-    pub fn initial_markdown(&mut self, markdown: &str) -> &mut Server {
-        self.initial_markdown = Some(markdown.to_string());
-        self
-    }
-
-    /// Sets the theme that should be used for syntax highlighting.
-    ///
-    /// Syntax highlighting is provided by [highlight.js](https://highlightjs.org/). All themes
-    /// supported by highlight.js are supported.
-    pub fn highlight_theme(&mut self, theme: &str) -> &mut Server {
-        self.highlight_theme = Some(theme.to_string());
-        self
+    /// Returns the socket address that the websocket server is listening on.
+    pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
+        self.websocket_server.local_addr()
     }
 
     /// Starts the server, returning a `ServerHandle` to communicate with it.
-    pub fn start(self) -> ServerHandle {
-        let websocket_server = self.websocket_server.clone();
+    pub fn start(&mut self) -> Sender<String> {
+        let (markdown_sender, markdown_receiver) = mpsc::channel::<String>();
+        let websocket_sender = self.websocket_server.start();
+        println!("websockets listening on {}", self.websocket_addr().unwrap());
 
-        // Start websocket server
         thread::spawn(move || {
-            let server = websocket_server.read().unwrap();
-            server.start();
+            for markdown in markdown_receiver.iter() {
+                let html: String = markdown::to_html(&markdown);
+                println!("SENDING MARKDOWN: {}", html);
+                websocket_sender.send(html);
+            }
         });
 
         let http_server = self.http_server.clone();
-        let websocket_port = self.websocket_port;
 
-        // Start http server
-        let initial_markdown = match self.initial_markdown {
-            Some(ref markdown) => markdown.clone(),
-            None => "".to_string(),
-        };
-        let highlight_theme = match self.highlight_theme {
-            Some(ref theme) => theme.clone(),
-            None => "github".to_string(),
-        };
+        let websocket_port = self.websocket_server.local_addr().unwrap().port();
+
+        let config = self.config.clone();
         thread::spawn(move || {
             let server = http_server.read().unwrap();
             debug!("Starting http_server");
-            server.start(websocket_port, initial_markdown, highlight_theme);
+            server.start(websocket_port,
+                         config.initial_markdown,
+                         config.highlight_theme);
         });
 
-        ServerHandle { server: self }
+        markdown_sender
     }
 }
