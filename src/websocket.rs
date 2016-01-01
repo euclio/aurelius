@@ -113,6 +113,9 @@ impl Server {
     }
 
     /// Starts the server.
+    ///
+    /// Returns a channel that can be used to send data that will be pushed to clients of the
+    /// server.
     pub fn start(&mut self) -> chan::Sender<String> {
         // FIXME: Currently, this channel sends to the first available consumer, not to all.
         let (markdown_sender, markdown_receiver) = chan::sync(0);

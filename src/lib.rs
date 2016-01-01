@@ -107,7 +107,10 @@ impl Server {
         self.websocket_server.local_addr()
     }
 
-    /// Starts the server, returning a `ServerHandle` to communicate with it.
+    /// Starts the server.
+    ///
+    /// Returns a channel that can be used to send markdown to the server. The markdown will be
+    /// sent as HTML to all clients of the websocket server.
     pub fn start(&mut self) -> Sender<String> {
         let (markdown_sender, markdown_receiver) = mpsc::channel::<String>();
         let websocket_sender = self.websocket_server.start();
