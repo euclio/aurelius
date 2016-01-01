@@ -50,7 +50,6 @@ use std::env;
 use std::net::SocketAddr;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
 use std::sync::mpsc::{self, Sender};
 use std::thread;
 
@@ -61,7 +60,7 @@ use websocket::Server as WebSocketServer;
 ///
 /// The server will listen for HTTP and WebSocket connections on arbitrary ports.
 pub struct Server {
-    http_server: Arc<RwLock<HttpServer>>,
+    http_server: HttpServer,
     websocket_server: WebSocketServer,
     config: Config,
 }
@@ -108,8 +107,7 @@ impl Server {
     /// ```
     pub fn new_with_config(config: Config) -> Server {
         Server {
-            http_server: Arc::new(RwLock::new(HttpServer::new(("localhost", 0),
-                                                              config.working_directory.clone()))),
+            http_server: HttpServer::new(("localhost", 0), config.working_directory.clone()),
             websocket_server: WebSocketServer::new(("localhost", 0)),
             config: config,
         }
@@ -122,7 +120,7 @@ impl Server {
 
     /// Returns the socket address that the HTTP server is listening on.
     pub fn http_addr(&self) -> io::Result<SocketAddr> {
-        self.http_server.read().unwrap().local_addr()
+        self.http_server.local_addr()
     }
 
     /// Changes the "current working directory" of the HTTP server. The HTTP server will serve
@@ -130,7 +128,7 @@ impl Server {
     pub fn change_working_directory<P>(&mut self, dir: P)
         where P: AsRef<Path>
     {
-        self.http_server.write().unwrap().change_working_directory(dir);
+        self.http_server.change_working_directory(dir);
     }
 
     /// Starts the server.
@@ -148,18 +146,12 @@ impl Server {
             }
         });
 
-        let http_server = self.http_server.clone();
-
         let websocket_port = self.websocket_server.local_addr().unwrap().port();
 
-        let config = self.config.clone();
-        thread::spawn(move || {
-            let server = http_server.read().unwrap();
-            debug!("Starting http_server");
-            server.start(websocket_port,
-                         config.initial_markdown,
-                         config.highlight_theme);
-        });
+        debug!("Starting http_server");
+        self.http_server.start(websocket_port,
+                               self.config.initial_markdown.to_owned(),
+                               self.config.highlight_theme.to_owned());
 
         markdown_sender
     }

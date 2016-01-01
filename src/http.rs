@@ -7,6 +7,7 @@ use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 use porthole;
 use nickel::{Nickel, StaticFilesHandler};
@@ -65,14 +66,11 @@ impl Server {
         Ok(self.local_addr)
     }
 
-    /// Starts the server.
-    ///
-    /// Once a connection is received, the client will initiate WebSocket connections on
-    /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
-    /// connection.
-    ///
-    /// This method does not return.
-    pub fn start(&self, websocket_port: u16, initial_markdown: String, highlight_theme: String) {
+    fn listen_forever(local_addr: SocketAddr,
+                      websocket_port: u16,
+                      initial_markdown: String,
+                      highlight_theme: String,
+                      current_working_directory: Arc<Mutex<PathBuf>>) {
         let mut server = Nickel::new();
 
         let mut data = HashMap::new();
@@ -103,15 +101,14 @@ impl Server {
             }
         });
 
-
-        let local_cwd = self.cwd.clone();
+        let local_cwd = current_working_directory.clone();
         server.utilize(middleware! { |request, response|
             let path = request.path_without_query().map(|path| {
                 path[1..].to_owned()
             });
 
             if let Some(path) = path {
-                let path = local_cwd.lock().unwrap().join(path);
+                let path = local_cwd.lock().unwrap().clone().join(path);
                 match fs::metadata(&path) {
                     Ok(ref attr) if attr.is_file() => return response.send_file(&path),
                     Err(ref e) if e.kind() != io::ErrorKind::NotFound => {
@@ -128,6 +125,23 @@ impl Server {
         assert!(static_dir.is_absolute());
         server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
 
-        server.listen(self.local_addr);
+        server.listen(local_addr);
+    }
+
+    /// Starts the server.
+    ///
+    /// Once a connection is received, the client will initiate WebSocket connections on
+    /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
+    /// connection.
+    pub fn start(&self, websocket_port: u16, initial_markdown: String, highlight_theme: String) {
+        let current_working_directory = self.cwd.clone();
+        let local_addr = self.local_addr;
+        thread::spawn(move || {
+            Self::listen_forever(local_addr,
+                                 websocket_port,
+                                 initial_markdown,
+                                 highlight_theme,
+                                 current_working_directory);
+        });
     }
 }
