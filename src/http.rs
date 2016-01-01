@@ -2,9 +2,11 @@
 
 use std::collections::HashMap;
 use std::env;
+use std::fs;
 use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use porthole;
 use nickel::{Nickel, StaticFilesHandler};
@@ -17,6 +19,10 @@ use markdown;
 /// received at the server root.
 pub struct Server {
     local_addr: SocketAddr,
+
+    /// The "current working directory" of the server. Any static file requests will be joined to
+    /// this directory.
+    cwd: Arc<Mutex<PathBuf>>,
 }
 
 impl Server {
@@ -41,7 +47,17 @@ impl Server {
                               .next()
                               .unwrap();
 
-        Server { local_addr: socket_addr }
+        Server {
+            local_addr: socket_addr,
+            cwd: Arc::new(Mutex::new(env::current_dir().unwrap().as_path().to_owned())),
+        }
+    }
+
+    pub fn change_working_directory<P>(&mut self, dir: P)
+        where P: AsRef<Path>
+    {
+        let mut cwd = self.cwd.lock().unwrap();
+        *cwd = dir.as_ref().to_owned();
     }
 
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
@@ -84,6 +100,26 @@ impl Server {
             get "/" => |_, response| {
                 return response.render(markdown_view.to_str().unwrap(), &data);
             }
+        });
+
+
+        let local_cwd = self.cwd.clone();
+        server.utilize(middleware! { |request, response|
+            let path = request.path_without_query().map(|path| {
+                path[1..].to_owned()
+            });
+
+            if let Some(path) = path {
+                let path = local_cwd.lock().unwrap().join(path);
+                match fs::metadata(&path) {
+                    Ok(ref attr) if attr.is_file() => return response.send_file(&path),
+                    Err(ref e) if e.kind() != io::ErrorKind::NotFound => {
+                        debug!("Error getting metadata for file '{:?}': {:?}",
+                                                                  path, e)
+                    }
+                    _ => {}
+                }
+            };
         });
 
         let mut static_dir = root.to_path_buf();

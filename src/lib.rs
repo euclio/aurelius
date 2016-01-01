@@ -48,6 +48,7 @@ mod websocket;
 
 use std::net::SocketAddr;
 use std::io;
+use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::sync::mpsc::{self, Sender};
 use std::thread;
@@ -107,6 +108,14 @@ impl Server {
     /// Returns the socket address that the HTTP server is listening on.
     pub fn http_addr(&self) -> io::Result<SocketAddr> {
         self.http_server.read().unwrap().local_addr()
+    }
+
+    /// Changes the "current working directory" of the HTTP server. The HTTP server will serve
+    /// static file requests out of the new directory.
+    pub fn change_working_directory<P>(&mut self, dir: P)
+        where P: AsRef<Path>
+    {
+        self.http_server.write().unwrap().change_working_directory(dir);
     }
 
     /// Starts the server.
