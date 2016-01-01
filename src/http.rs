@@ -27,8 +27,9 @@ pub struct Server {
 
 impl Server {
     /// Creates a new server that listens on socket address `addr`.
-    pub fn new<A>(addr: A) -> Server
-        where A: ToSocketAddrs
+    pub fn new<A, P>(addr: A, working_directory: P) -> Server
+        where A: ToSocketAddrs,
+              P: AsRef<Path>
     {
         let socket_addr = addr.to_socket_addrs()
                               .unwrap()
@@ -49,7 +50,7 @@ impl Server {
 
         Server {
             local_addr: socket_addr,
-            cwd: Arc::new(Mutex::new(env::current_dir().unwrap().as_path().to_owned())),
+            cwd: Arc::new(Mutex::new(working_directory.as_ref().to_owned())),
         }
     }
 

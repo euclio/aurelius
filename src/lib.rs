@@ -46,9 +46,10 @@ pub mod markdown;
 mod http;
 mod websocket;
 
+use std::env;
 use std::net::SocketAddr;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use std::sync::mpsc::{self, Sender};
 use std::thread;
@@ -66,13 +67,26 @@ pub struct Server {
 }
 
 /// Configuration for the markdown server.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Config {
     /// The initial markdown to render when starting the server.
     pub initial_markdown: String,
 
     /// The syntax highlighting theme to use.
     pub highlight_theme: String,
+
+    /// The directory that static files should be served out of.
+    pub working_directory: PathBuf,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            working_directory: env::current_dir().unwrap().to_owned(),
+            initial_markdown: "".to_owned(),
+            highlight_theme: "github".to_owned(),
+        }
+    }
 }
 
 impl Server {
@@ -94,7 +108,8 @@ impl Server {
     /// ```
     pub fn new_with_config(config: Config) -> Server {
         Server {
-            http_server: Arc::new(RwLock::new(HttpServer::new(("localhost", 0)))),
+            http_server: Arc::new(RwLock::new(HttpServer::new(("localhost", 0),
+                                                              config.working_directory.clone()))),
             websocket_server: WebSocketServer::new(("localhost", 0)),
             config: config,
         }
