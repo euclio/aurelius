@@ -2,8 +2,11 @@
 
 use std::collections::HashMap;
 use std::env;
+use std::io;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::Path;
 
+use porthole;
 use nickel::{Nickel, StaticFilesHandler};
 
 use markdown;
@@ -13,14 +16,36 @@ use markdown;
 /// The server listens on the provided port, rendering the markdown preview when a GET request is
 /// received at the server root.
 pub struct Server {
-    /// The port that the server is listening on.
-    pub port: u16,
+    local_addr: SocketAddr,
 }
 
 impl Server {
-    /// Creates a new server that listens on port `port`.
-    pub fn new(port: u16) -> Server {
-        Server { port: port }
+    /// Creates a new server that listens on socket address `addr`.
+    pub fn new<A>(addr: A) -> Server
+        where A: ToSocketAddrs
+    {
+        let socket_addr = addr.to_socket_addrs()
+                              .unwrap()
+                              .map(|addr| {
+                                  if addr.port() == 0 {
+                                      let unused_port = porthole::open().unwrap();
+                                      format!("localhost:{}", unused_port)
+                                          .to_socket_addrs()
+                                          .unwrap()
+                                          .next()
+                                          .unwrap()
+                                  } else {
+                                      addr
+                                  }
+                              })
+                              .next()
+                              .unwrap();
+
+        Server { local_addr: socket_addr }
+    }
+
+    pub fn local_addr(&self) -> io::Result<SocketAddr> {
+        Ok(self.local_addr)
     }
 
     /// Starts the server.
@@ -66,6 +91,6 @@ impl Server {
         assert!(static_dir.is_absolute());
         server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
 
-        server.listen(("0.0.0.0", self.port));
+        server.listen(self.local_addr);
     }
 }

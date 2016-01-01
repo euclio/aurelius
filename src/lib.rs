@@ -92,11 +92,8 @@ impl Server {
     /// });
     /// ```
     pub fn new_with_config(config: Config) -> Server {
-        let http_port = porthole::open().unwrap();
-        let http_server = HttpServer::new(http_port);
-
         Server {
-            http_server: Arc::new(RwLock::new(http_server)),
+            http_server: Arc::new(RwLock::new(HttpServer::new(("localhost", 0)))),
             websocket_server: WebSocketServer::new(("localhost", 0)),
             config: config,
         }
@@ -105,6 +102,11 @@ impl Server {
     /// Returns the socket address that the websocket server is listening on.
     pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
         self.websocket_server.local_addr()
+    }
+
+    /// Returns the socket address that the HTTP server is listening on.
+    pub fn http_addr(&self) -> io::Result<SocketAddr> {
+        self.http_server.read().unwrap().local_addr()
     }
 
     /// Starts the server.
@@ -136,5 +138,16 @@ impl Server {
         });
 
         markdown_sender
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Server;
+
+    #[test]
+    fn sanity() {
+        let mut server = Server::new();
+        server.start();
     }
 }
