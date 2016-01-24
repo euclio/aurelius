@@ -68,16 +68,16 @@ impl Server {
 
     fn listen_forever(local_addr: SocketAddr,
                       websocket_port: u16,
-                      initial_markdown: String,
-                      highlight_theme: String,
+                      config: &::Config,
                       current_working_directory: Arc<Mutex<PathBuf>>) {
         let mut server = Nickel::new();
 
         let mut data = HashMap::new();
         data.insert("websocket_port", websocket_port.to_string());
 
-        data.insert("initial_markdown", markdown::to_html(&initial_markdown));
-        data.insert("highlight_theme", highlight_theme);
+        data.insert("initial_markdown", markdown::to_html(&config.initial_markdown));
+        data.insert("highlight_theme", config.highlight_theme.to_owned());
+        data.insert("custom_css", config.custom_css.to_owned());
 
         // We need to figure out the crate root, so we can pass absolute paths into the nickel
         // APIs.
@@ -133,14 +133,14 @@ impl Server {
     /// Once a connection is received, the client will initiate WebSocket connections on
     /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
     /// connection.
-    pub fn start(&self, websocket_port: u16, initial_markdown: String, highlight_theme: String) {
+    pub fn start(&self, websocket_port: u16, config: &::Config) {
         let current_working_directory = self.cwd.clone();
         let local_addr = self.local_addr;
+        let config = config.clone();
         thread::spawn(move || {
             Self::listen_forever(local_addr,
                                  websocket_port,
-                                 initial_markdown,
-                                 highlight_theme,
+                                 &config,
                                  current_working_directory);
         });
     }

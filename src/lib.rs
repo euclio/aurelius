@@ -72,10 +72,19 @@ pub struct Config {
     pub initial_markdown: String,
 
     /// The syntax highlighting theme to use.
+    ///
+    /// Defaults to the github syntax highlighting theme.
     pub highlight_theme: String,
 
     /// The directory that static files should be served out of.
+    ///
+    /// Defaults to the current working directory.
     pub working_directory: PathBuf,
+
+    /// Custom CSS that should be used to style the markdown.
+    ///
+    /// Defaults to the github styles.
+    pub custom_css: String,
 }
 
 impl Default for Config {
@@ -84,6 +93,7 @@ impl Default for Config {
             working_directory: env::current_dir().unwrap().to_owned(),
             initial_markdown: "".to_owned(),
             highlight_theme: "github".to_owned(),
+            custom_css: "/vendor/github-markdown-css/github-markdown.css".to_owned(),
         }
     }
 }
@@ -149,9 +159,7 @@ impl Server {
         let websocket_port = self.websocket_server.local_addr().unwrap().port();
 
         debug!("Starting http_server");
-        self.http_server.start(websocket_port,
-                               self.config.initial_markdown.to_owned(),
-                               self.config.highlight_theme.to_owned());
+        self.http_server.start(websocket_port, &self.config);
 
         markdown_sender
     }
