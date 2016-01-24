@@ -10,7 +10,7 @@ repository = "https://github.com/euclio/aurelius"
 readme = "README.md"
 
 keywords = ["markdown", "vim"]
-license = "MIT"
+license = "MIT/Apache-2.0"
 
 [dependencies]
 chan = "0.1.14"
