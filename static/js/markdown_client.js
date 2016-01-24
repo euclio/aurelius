@@ -16,8 +16,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function renderMath() {
+      if (renderMathInElement !== undefined) {
+        renderMathInElement(
+            document.getElementById("markdown-preview"),
+            {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "\\[", right: "\\]", display: true},
+                    {left: "$", right: "$", display: false},
+                    {left: "\\(", right: "\\)", display: false}
+                ]
+            }
+        );
+      }
+    }
+
 
     syntaxHighlight();
+    renderMath();
     var previewWindow = document.getElementById('markdown-preview');
     var webSocketUrl = ('ws://localhost:' +
                         previewWindow.getAttribute('data-websocket-port'));
@@ -33,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Data received: ' + event.data);
         document.getElementById('markdown-preview').innerHTML = event.data;
         syntaxHighlight();
+        renderMath();
     }
 
     socket.onerror = function(event) {
