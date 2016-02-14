@@ -11,6 +11,7 @@ use hoedown::{AUTOLINK, FENCED_CODE, TABLES, MATH, MATH_EXPLICIT};
 /// - Autolinking email addresses and URLs
 /// - Fenced code blocks
 /// - Tables
+/// - Mathjax support
 pub fn to_html(markdown: &str) -> String {
     let doc = Markdown::new(markdown).extensions(AUTOLINK | FENCED_CODE | TABLES | MATH | MATH_EXPLICIT);
     let mut html = html::Html::new(html::Flags::empty(), 0);
