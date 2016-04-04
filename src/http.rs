@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use porthole;
-use nickel::{Nickel, StaticFilesHandler};
+use nickel::{self, Nickel, StaticFilesHandler};
 
 use markdown;
 
@@ -70,11 +70,13 @@ impl Server {
                       config: &::Config,
                       current_working_directory: Arc<Mutex<PathBuf>>) {
         let mut server = Nickel::new();
+        server.options = nickel::Options::default().output_on_listen(false);
 
         let mut data = HashMap::new();
         data.insert("websocket_port", websocket_port.to_string());
 
-        data.insert("initial_markdown", markdown::to_html(&config.initial_markdown));
+        data.insert("initial_markdown",
+                    markdown::to_html(&config.initial_markdown));
         data.insert("highlight_theme", config.highlight_theme.to_owned());
         data.insert("custom_css", config.custom_css.to_owned());
 
