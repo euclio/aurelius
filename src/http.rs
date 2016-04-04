@@ -1,7 +1,6 @@
 //! Contains the HTTP server component.
 
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -79,18 +78,7 @@ impl Server {
         data.insert("highlight_theme", config.highlight_theme.to_owned());
         data.insert("custom_css", config.custom_css.to_owned());
 
-        // We need to figure out the crate root, so we can pass absolute paths into the nickel
-        // APIs.
-        let root = {
-            let crate_root = Path::new(file!()).parent().unwrap().parent().unwrap();
-            if crate_root.is_absolute() {
-                crate_root.to_owned()
-            } else {
-                let mut current_dir = env::current_dir().unwrap();
-                current_dir.push(crate_root);
-                current_dir.to_owned()
-            }
-        };
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
 
         let mut markdown_view = root.to_path_buf();
         markdown_view.push("templates/markdown_view.html");
