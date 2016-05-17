@@ -1,16 +1,14 @@
 [package]
-name = "aurelius"
-version = "0.1.9"
 authors = ["Andy Russell <arussell123@gmail.com>"]
 description = "A complete solution for previewing markdown."
-
 documentation = "https://euclio.github.io/aurelius"
 homepage = "https://github.com/euclio/aurelius"
-repository = "https://github.com/euclio/aurelius"
-readme = "README.md"
-
 keywords = ["markdown", "vim"]
 license = "MIT/Apache-2.0"
+name = "aurelius"
+readme = "README.md"
+repository = "https://github.com/euclio/aurelius"
+version = "0.1.9"
 
 [dependencies]
 chan = "0.1.14"
@@ -20,3 +18,6 @@ nickel = "0.8.0"
 porthole = "0.1.0"
 url = "1.1.0"
 websocket = "~0.17.0"
+
+[dev-dependencies]
+hyper = "0.9.4"
