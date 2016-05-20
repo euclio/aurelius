@@ -64,10 +64,7 @@ impl Server {
         Ok(self.local_addr)
     }
 
-    fn listen(local_addr: SocketAddr,
-              websocket_port: u16,
-              config: &::Config,
-              current_working_directory: Arc<Mutex<PathBuf>>) {
+    fn listen(&self, websocket_port: u16, config: &::Config) {
         let mut server = Nickel::new();
         server.options = nickel::Options::default().output_on_listen(false);
 
@@ -90,7 +87,7 @@ impl Server {
             }
         });
 
-        let local_cwd = current_working_directory.clone();
+        let local_cwd = self.cwd.clone();
         server.utilize(middleware! { |request, response|
             let path = request.path_without_query().map(|path| {
                 path[1..].to_owned()
@@ -114,7 +111,7 @@ impl Server {
         assert!(static_dir.is_absolute());
         server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
 
-        let listening = server.listen(local_addr).unwrap();
+        let listening = server.listen(self.local_addr).unwrap();
         listening.detach();
     }
 
@@ -124,11 +121,6 @@ impl Server {
     /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
     /// connection.
     pub fn start(&self, websocket_port: u16, config: &::Config) {
-        let current_working_directory = self.cwd.clone();
-        let local_addr = self.local_addr;
-        Self::listen(local_addr,
-                     websocket_port,
-                     &config,
-                     current_working_directory);
+        self.listen(websocket_port, &config);
     }
 }
