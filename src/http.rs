@@ -6,7 +6,6 @@ use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 use porthole;
 use nickel::{self, Nickel, StaticFilesHandler};
@@ -65,10 +64,10 @@ impl Server {
         Ok(self.local_addr)
     }
 
-    fn listen_forever(local_addr: SocketAddr,
-                      websocket_port: u16,
-                      config: &::Config,
-                      current_working_directory: Arc<Mutex<PathBuf>>) {
+    fn listen(local_addr: SocketAddr,
+              websocket_port: u16,
+              config: &::Config,
+              current_working_directory: Arc<Mutex<PathBuf>>) {
         let mut server = Nickel::new();
         server.options = nickel::Options::default().output_on_listen(false);
 
@@ -115,7 +114,8 @@ impl Server {
         assert!(static_dir.is_absolute());
         server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
 
-        server.listen(local_addr);
+        let listening = server.listen(local_addr).unwrap();
+        listening.detach();
     }
 
     /// Starts the server.
@@ -126,12 +126,9 @@ impl Server {
     pub fn start(&self, websocket_port: u16, config: &::Config) {
         let current_working_directory = self.cwd.clone();
         let local_addr = self.local_addr;
-        let config = config.clone();
-        thread::spawn(move || {
-            Self::listen_forever(local_addr,
-                                 websocket_port,
-                                 &config,
-                                 current_working_directory);
-        });
+        Self::listen(local_addr,
+                     websocket_port,
+                     &config,
+                     current_working_directory);
     }
 }

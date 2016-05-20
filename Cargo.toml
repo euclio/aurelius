@@ -14,7 +14,7 @@ version = "0.1.9"
 chan = "0.1.14"
 hoedown = "5.0.0"
 log = "0.3.1"
-nickel = "0.8.0"
+nickel = { git = "https://github.com/Ryman/nickel.rs", branch = "expose_listener" }
 porthole = "0.1.0"
 url = "1.1.0"
 websocket = "~0.17.0"
