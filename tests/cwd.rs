@@ -10,7 +10,6 @@ use url::Url;
 #[test]
 fn change_working_directory() {
     let mut server = Server::new();
-    server.start();
 
     // Try to find a resource outside of the working directory.
     let http_port = server.http_addr().unwrap().port();

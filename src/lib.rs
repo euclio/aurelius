@@ -27,7 +27,7 @@
 //!
 //! [vim-markdown-composer]: https://github.com/euclio/vim-markdown-composer
 
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
 extern crate chan;
 extern crate hoedown;
@@ -50,8 +50,6 @@ use std::env;
 use std::net::SocketAddr;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{self, Sender};
-use std::thread;
 
 use http::Server as HttpServer;
 use websocket::Server as WebSocketServer;
@@ -116,11 +114,18 @@ impl Server {
     /// });
     /// ```
     pub fn new_with_config(config: Config) -> Server {
-        Server {
+        let server = Server {
             http_server: HttpServer::new(("localhost", 0), config.working_directory.clone()),
-            websocket_server: WebSocketServer::new(("localhost", 0)),
+            websocket_server: WebSocketServer::bind(("localhost", 0)).unwrap(),
             config: config,
-        }
+        };
+
+        let websocket_port = server.websocket_server.local_addr().unwrap().port();
+
+        debug!("Starting http_server");
+        server.http_server.start(websocket_port, &server.config);
+
+        server
     }
 
     /// Returns the socket address that the websocket server is listening on.
@@ -141,27 +146,11 @@ impl Server {
         self.http_server.change_working_directory(dir);
     }
 
-    /// Starts the server.
-    ///
-    /// Returns a channel that can be used to send markdown to the server. The markdown will be
-    /// sent as HTML to all clients of the websocket server.
-    pub fn start(&mut self) -> Sender<String> {
-        let (markdown_sender, markdown_receiver) = mpsc::channel::<String>();
-        let websocket_sender = self.websocket_server.start();
-
-        thread::spawn(move || {
-            for markdown in markdown_receiver.iter() {
-                let html: String = markdown::to_html(&markdown);
-                websocket_sender.send(html);
-            }
-        });
-
-        let websocket_port = self.websocket_server.local_addr().unwrap().port();
-
-        debug!("Starting http_server");
-        self.http_server.start(websocket_port, &self.config);
-
-        markdown_sender
+    /// Sends markdown to the server for rendering. All websockets connected to the server will
+    /// receive a message containing the markdown rendered as HTML.
+    pub fn render_markdown(&self, markdown: &str) {
+        let html = markdown::to_html(markdown);
+        self.websocket_server.send(&html);
     }
 }
 
@@ -171,7 +160,6 @@ mod tests {
 
     #[test]
     fn sanity() {
-        let mut server = Server::new();
-        server.start();
+        let _ = Server::new();
     }
 }

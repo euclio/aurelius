@@ -25,11 +25,8 @@ fn get_basic_response(server: &Server) -> String {
 fn custom_css() {
     let url = "http://scholarlymarkdown.com/scholdoc-distribution/css/core/scholmd-core-latest.css";
 
-    let mut server = Server::new_with_config(Config {
-        custom_css: String::from(url),
-        ..Default::default()
-    });
-    server.start();
+    let server =
+        Server::new_with_config(Config { custom_css: String::from(url), ..Default::default() });
     let response = get_basic_response(&server);
 
     assert!(response.contains(url));
@@ -38,11 +35,10 @@ fn custom_css() {
 
 #[test]
 fn highlight_theme() {
-    let mut server = Server::new_with_config(Config {
+    let server = Server::new_with_config(Config {
         highlight_theme: String::from("darcula"),
         ..Default::default()
     });
-    server.start();
     let response = get_basic_response(&server);
     let link = "/vendor/highlight.js/styles/darcula.css";
 

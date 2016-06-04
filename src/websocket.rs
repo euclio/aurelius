@@ -1,7 +1,8 @@
 //! Contains the WebSocket server component.
 
 use std::io;
-use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
+use std::net::{TcpListener, TcpStream, ToSocketAddrs};
+use std::ops::Deref;
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -16,19 +17,41 @@ use websockets::result::WebSocketError;
 ///
 /// Manages WebSocket connections from clients of the HTTP server.
 pub struct Server {
-    server: TcpListener,
+    listener: TcpListener,
+    html_sender: chan::Sender<String>,
+    html_receiver: chan::Receiver<String>,
 }
 
 impl Server {
     /// Creates a new server that listens on port `port`.
-    pub fn new<A>(socket_addr: A) -> Server
+    pub fn bind<A>(socket_addr: A) -> io::Result<Server>
         where A: ToSocketAddrs
     {
-        Server { server: TcpListener::bind(socket_addr).unwrap() }
+        let (tx, rx) = chan::sync(0);
+
+        let server = Server {
+            listener: try!(TcpListener::bind(socket_addr)),
+            html_sender: tx,
+            html_receiver: rx,
+        };
+
+        let html_receiver = server.html_receiver.clone();
+        let listener = server.listener.try_clone().unwrap();
+        thread::spawn(move || {
+            for connection in listener.incoming() {
+                let connection = connection.unwrap();
+                let html_receiver = html_receiver.clone();
+                thread::spawn(move || {
+                    Self::handle_connection(connection, html_receiver);
+                });
+            }
+        });
+
+        Ok(server)
     }
 
-    pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.server.local_addr()
+    pub fn send(&self, data: &str) {
+        self.html_sender.send(String::from(data));
     }
 
     fn handle_connection(connection: TcpStream, markdown_receiver: chan::Receiver<String>) {
@@ -49,7 +72,7 @@ impl Server {
 
         let client = response.send().unwrap();
 
-        // Create the send and recieve channdels for the websocket.
+        // Create the send and receive channels for the websocket.
         let (mut sender, mut receiver) = client.split();
 
         // Create senders that will send websocket messages between threads.
@@ -111,28 +134,12 @@ impl Server {
             message_tx.send(Message::text(markdown)).unwrap();
         }
     }
+}
 
-    /// Starts the server.
-    ///
-    /// Returns a channel that can be used to send data that will be pushed to clients of the
-    /// server.
-    pub fn start(&mut self) -> chan::Sender<String> {
-        // FIXME: Currently, this channel sends to the first available consumer, not to all.
-        let (markdown_sender, markdown_receiver) = chan::sync(0);
-
-        let server = self.server.try_clone().unwrap();
-
-        thread::spawn(move || {
-            for connection in server.incoming() {
-                let connection = connection.unwrap();
-                let markdown_receiver = markdown_receiver.clone();
-                thread::spawn(move || {
-                    Self::handle_connection(connection, markdown_receiver.clone());
-                });
-            }
-        });
-
-        markdown_sender
+impl Deref for Server {
+    type Target = TcpListener;
+    fn deref(&self) -> &Self::Target {
+        &self.listener
     }
 }
 
@@ -143,10 +150,11 @@ mod tests {
     use websockets::{Client, Message, Receiver};
     use websockets::client::request::Url;
 
+    use super::Server;
+
     #[test]
     fn initial_send() {
-        let mut server = super::Server::new("localhost:0");
-        let sender = server.start();
+        let server = Server::bind("localhost:0").unwrap();
         let url = Url::parse(&format!("ws://localhost:{}", server.local_addr().unwrap().port()))
             .unwrap();
 
@@ -155,7 +163,7 @@ mod tests {
         response.validate().unwrap();
         let (_, mut receiver) = response.begin().split();
 
-        sender.send("Hello world!".to_owned());
+        server.send("Hello world!");
 
         let message: Message = receiver.recv_message().unwrap();
         assert_eq!(String::from_utf8(message.payload.into_owned()).unwrap(),
@@ -164,8 +172,7 @@ mod tests {
 
     #[test]
     fn multiple_send() {
-        let mut server = super::Server::new("localhost:0");
-        let sender = server.start();
+        let server = Server::bind("localhost:0").unwrap();
         let url = Url::parse(&format!("ws://localhost:{}", server.local_addr().unwrap().port()))
             .unwrap();
 
@@ -175,12 +182,12 @@ mod tests {
         let (_, mut receiver) = response.begin().split();
         let mut messages = receiver.incoming_messages();
 
-        sender.send("Hello world!".to_owned());
+        server.send("Hello world!");
         let hello_message: Message = messages.next().unwrap().unwrap();
         assert_eq!(String::from_utf8(hello_message.payload.into_owned()).unwrap(),
                    "Hello world!");
 
-        sender.send("Goodbye world!".to_owned());
+        server.send("Goodbye world!");
         let goodbye_message: Message = messages.next().unwrap().unwrap();
         assert_eq!(String::from_utf8(goodbye_message.payload.into_owned()).unwrap(),
                    "Goodbye world!");
