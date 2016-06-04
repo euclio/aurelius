@@ -11,7 +11,7 @@
 //! [Neovim](http://neovim.io), but it may be used to implement similar plugins for any editor.
 //! See [vim-markdown-composer] for a usage example.
 //!
-//! aurelius follows stable Rust. However, the API currently unstable and may change without
+//! aurelius follows stable Rust. However, the API is currently unstable and may change without
 //! warning.
 //!
 //! # Acknowledgments
