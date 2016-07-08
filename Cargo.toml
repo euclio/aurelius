@@ -1,6 +1,6 @@
 [package]
 name = "aurelius"
-version = "0.1.9"
+version = "0.1.10"
 authors = ["Andy Russell <arussell123@gmail.com>"]
 description = "A complete solution for previewing markdown."
 
