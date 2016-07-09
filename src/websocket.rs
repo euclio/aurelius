@@ -34,7 +34,7 @@ impl Server {
     fn handle_connection(connection: TcpStream, markdown_receiver: chan::Receiver<String>) {
         let stream = WebSocketStream::Tcp(connection);
         let request = Request::read(stream.try_clone().unwrap(), stream.try_clone().unwrap())
-                          .unwrap();
+            .unwrap();
         let headers = request.headers.clone();
 
         request.validate().unwrap();
@@ -58,54 +58,54 @@ impl Server {
         // Message receiver
         let ws_message_tx = message_tx.clone();
         let _ = thread::Builder::new()
-                    .name("ws_receive_loop".to_owned())
-                    .spawn(move || {
-                        for message in receiver.incoming_messages() {
-                            let message: Message = match message {
-                                Ok(m) => m,
-                                Err(_) => {
-                                    let _ = ws_message_tx.send(Message::close());
-                                    return;
-                                }
-                            };
-
-                            match message.opcode {
-                                Type::Close => {
-                                    let message = Message::close();
-                                    ws_message_tx.send(message).unwrap();
-                                    return;
-                                }
-                                Type::Ping => {
-                                    let message = Message::pong(message.payload);
-                                    ws_message_tx.send(message).unwrap();
-                                }
-                                _ => ws_message_tx.send(message).unwrap(),
-                            }
+            .name("ws_receive_loop".to_owned())
+            .spawn(move || {
+                for message in receiver.incoming_messages() {
+                    let message: Message = match message {
+                        Ok(m) => m,
+                        Err(_) => {
+                            let _ = ws_message_tx.send(Message::close());
+                            return;
                         }
-                    })
-                    .unwrap();
+                    };
+
+                    match message.opcode {
+                        Type::Close => {
+                            let message = Message::close();
+                            ws_message_tx.send(message).unwrap();
+                            return;
+                        }
+                        Type::Ping => {
+                            let message = Message::pong(message.payload);
+                            ws_message_tx.send(message).unwrap();
+                        }
+                        _ => ws_message_tx.send(message).unwrap(),
+                    }
+                }
+            })
+            .unwrap();
 
         let _ = thread::Builder::new()
-                    .name("ws_send_loop".to_owned())
-                    .spawn(move || {
-                        for message in message_rx.iter() {
-                            let message: Message = message;
-                            sender.send_message(&message)
-                                  .or_else(|e| {
-                                      match e {
-                                          WebSocketError::IoError(e) => {
-                                              match e.kind() {
-                                                  io::ErrorKind::BrokenPipe => Ok(()),
-                                                  _ => Err(e),
-                                              }
-                                          }
-                                          _ => panic!(e),
-                                      }
-                                  })
-                                  .unwrap();
-                        }
-                    })
-                    .unwrap();
+            .name("ws_send_loop".to_owned())
+            .spawn(move || {
+                for message in message_rx.iter() {
+                    let message: Message = message;
+                    sender.send_message(&message)
+                        .or_else(|e| {
+                            match e {
+                                WebSocketError::IoError(e) => {
+                                    match e.kind() {
+                                        io::ErrorKind::BrokenPipe => Ok(()),
+                                        _ => Err(e),
+                                    }
+                                }
+                                _ => panic!(e),
+                            }
+                        })
+                        .unwrap();
+                }
+            })
+            .unwrap();
 
         for markdown in markdown_receiver.iter() {
             message_tx.send(Message::text(markdown)).unwrap();
@@ -138,8 +138,6 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
-    use std::io::prelude::*;
-
     use websockets::{Client, Message, Receiver};
     use websockets::client::request::Url;
 
@@ -148,7 +146,7 @@ mod tests {
         let mut server = super::Server::new("localhost:0");
         let sender = server.start();
         let url = Url::parse(&format!("ws://localhost:{}", server.local_addr().unwrap().port()))
-                      .unwrap();
+            .unwrap();
 
         let request = Client::connect(&url).unwrap();
         let response = request.send().unwrap();
@@ -167,7 +165,7 @@ mod tests {
         let mut server = super::Server::new("localhost:0");
         let sender = server.start();
         let url = Url::parse(&format!("ws://localhost:{}", server.local_addr().unwrap().port()))
-                      .unwrap();
+            .unwrap();
 
         let request = Client::connect(&url).unwrap();
         let response = request.send().unwrap();

@@ -31,21 +31,21 @@ impl Server {
               P: AsRef<Path>
     {
         let socket_addr = addr.to_socket_addrs()
-                              .unwrap()
-                              .map(|addr| {
-                                  if addr.port() == 0 {
-                                      let unused_port = porthole::open().unwrap();
-                                      format!("localhost:{}", unused_port)
-                                          .to_socket_addrs()
-                                          .unwrap()
-                                          .next()
-                                          .unwrap()
-                                  } else {
-                                      addr
-                                  }
-                              })
-                              .next()
-                              .unwrap();
+            .unwrap()
+            .map(|addr| {
+                if addr.port() == 0 {
+                    let unused_port = porthole::open().unwrap();
+                    format!("localhost:{}", unused_port)
+                        .to_socket_addrs()
+                        .unwrap()
+                        .next()
+                        .unwrap()
+                } else {
+                    addr
+                }
+            })
+            .next()
+            .unwrap();
 
         Server {
             local_addr: socket_addr,
