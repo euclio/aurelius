@@ -10,10 +10,10 @@ use url::Url;
 #[test]
 fn change_working_directory() {
     let mut server = Server::new();
-    server.start();
+    let mut handle = server.start();
 
     // Try to find a resource outside of the working directory.
-    let http_port = server.http_addr().unwrap().port();
+    let http_port = handle.http_addr().unwrap().port();
     let mut resource_url = Url::parse(&format!("http://localhost:{}", http_port)).unwrap();
     resource_url.set_path("/file");
 
@@ -21,7 +21,7 @@ fn change_working_directory() {
     assert_eq!(response.status, StatusCode::NotFound);
 
     // Change to a directory where the file exists
-    server.change_working_directory("tests/assets");
+    handle.change_working_directory("tests/assets");
 
     let response = Client::new().get(resource_url).send().unwrap();
     assert_eq!(response.status, StatusCode::Ok);

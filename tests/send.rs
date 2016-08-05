@@ -10,9 +10,9 @@ use aurelius::Server;
 #[test]
 fn simple() {
     let mut server = Server::new();
-    let sender = server.start();
+    let handle = server.start();
 
-    let websocket_port = server.websocket_addr().unwrap().port();
+    let websocket_port = handle.websocket_addr().unwrap().port();
 
     let url = Url::parse(&format!("ws://localhost:{}", websocket_port)).unwrap();
 
@@ -22,7 +22,7 @@ fn simple() {
     response.validate().unwrap();
 
     let (_, mut receiver) = response.begin().split();
-    sender.send(String::from("Hello, world!")).unwrap();
+    handle.send("Hello, world!");
 
     let message: Message = receiver.incoming_messages().next().unwrap().unwrap();
     let html: String = String::from_utf8(message.payload.into_owned()).unwrap();

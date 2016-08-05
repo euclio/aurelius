@@ -8,10 +8,10 @@ use std::io::prelude::*;
 use hyper::Client;
 use url::Url;
 
-use aurelius::{Config, Server};
+use aurelius::{Config, Handle, Server};
 
-fn get_basic_response(server: &Server) -> String {
-    let http_addr = server.http_addr().unwrap();
+fn get_basic_response(handle: &Handle) -> String {
+    let http_addr = handle.http_addr().unwrap();
 
     let url = Url::parse(&format!("http://localhost:{}", http_addr.port())).unwrap();
 
@@ -25,12 +25,10 @@ fn get_basic_response(server: &Server) -> String {
 fn custom_css() {
     let url = "http://scholarlymarkdown.com/scholdoc-distribution/css/core/scholmd-core-latest.css";
 
-    let mut server = Server::new_with_config(Config {
-        custom_css: String::from(url),
-        ..Default::default()
-    });
-    server.start();
-    let response = get_basic_response(&server);
+    let mut server =
+        Server::new_with_config(Config { custom_css: String::from(url), ..Default::default() });
+    let handle = server.start();
+    let response = get_basic_response(&handle);
 
     assert!(response.contains(url));
 }
@@ -42,8 +40,8 @@ fn highlight_theme() {
         highlight_theme: String::from("darcula"),
         ..Default::default()
     });
-    server.start();
-    let response = get_basic_response(&server);
+    let handle = server.start();
+    let response = get_basic_response(&handle);
     let link = "/vendor/highlight.js/styles/darcula.css";
 
     assert!(response.contains(link));

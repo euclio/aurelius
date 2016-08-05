@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use porthole;
-use nickel::{self, Nickel, StaticFilesHandler};
+use nickel::{self, Nickel, HttpRouter, StaticFilesHandler};
 
 use markdown;
 
@@ -81,10 +81,9 @@ impl Server {
         let mut markdown_view = root.to_path_buf();
         markdown_view.push("templates/markdown_view.html");
 
-        server.utilize(router! {
-            get "/" => |_, response| {
-                return response.render(markdown_view.to_str().unwrap(), &data);
-            }
+        server.get("/",
+                   middleware! { |_request, response|
+            return response.render(markdown_view.to_str().unwrap(), &data);
         });
 
         let local_cwd = self.cwd.clone();

@@ -50,7 +50,7 @@ use std::env;
 use std::net::SocketAddr;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{self, Sender};
+use std::sync::mpsc;
 use std::thread;
 
 use http::Server as HttpServer;
@@ -60,9 +60,15 @@ use websocket::Server as WebSocketServer;
 ///
 /// The server will listen for HTTP and WebSocket connections on arbitrary ports.
 pub struct Server {
+    config: Config,
+}
+
+/// A server that is listening for HTTP requests on a given port, and broadcasting rendered
+/// markdown over a websocket on another port.
+pub struct Handle {
     http_server: HttpServer,
     websocket_server: WebSocketServer,
-    config: Config,
+    markdown_sender: mpsc::Sender<String>,
 }
 
 /// Configuration for the markdown server.
@@ -116,13 +122,41 @@ impl Server {
     /// });
     /// ```
     pub fn new_with_config(config: Config) -> Server {
-        Server {
-            http_server: HttpServer::new(("localhost", 0), config.working_directory.clone()),
-            websocket_server: WebSocketServer::new(("localhost", 0)),
-            config: config,
-        }
+        Server { config: config }
     }
 
+    /// Starts the server.
+    ///
+    /// Returns a channel that can be used to send markdown to the server. The markdown will be
+    /// sent as HTML to all clients of the websocket server.
+    pub fn start(&mut self) -> Handle {
+        let http_server = HttpServer::new(("localhost", 0), self.config.working_directory.clone());
+        let mut websocket_server = WebSocketServer::new(("localhost", 0));
+
+        let (markdown_sender, markdown_receiver) = mpsc::channel::<String>();
+        let websocket_sender = websocket_server.start();
+
+        thread::spawn(move || {
+            for markdown in markdown_receiver.iter() {
+                let html: String = markdown::to_html(&markdown);
+                websocket_sender.send(html);
+            }
+        });
+
+        let websocket_port = websocket_server.local_addr().unwrap().port();
+
+        debug!("Starting http_server");
+        http_server.start(websocket_port, &self.config);
+
+        Handle {
+            http_server: http_server,
+            websocket_server: websocket_server,
+            markdown_sender: markdown_sender,
+        }
+    }
+}
+
+impl Handle {
     /// Returns the socket address that the websocket server is listening on.
     pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
         self.websocket_server.local_addr()
@@ -141,27 +175,11 @@ impl Server {
         self.http_server.change_working_directory(dir);
     }
 
-    /// Starts the server.
-    ///
-    /// Returns a channel that can be used to send markdown to the server. The markdown will be
-    /// sent as HTML to all clients of the websocket server.
-    pub fn start(&mut self) -> Sender<String> {
-        let (markdown_sender, markdown_receiver) = mpsc::channel::<String>();
-        let websocket_sender = self.websocket_server.start();
-
-        thread::spawn(move || {
-            for markdown in markdown_receiver.iter() {
-                let html: String = markdown::to_html(&markdown);
-                websocket_sender.send(html);
-            }
-        });
-
-        let websocket_port = self.websocket_server.local_addr().unwrap().port();
-
-        debug!("Starting http_server");
-        self.http_server.start(websocket_port, &self.config);
-
-        markdown_sender
+    /// Publish new markdown to be rendered by the server.
+    pub fn send<S>(&self, data: S)
+        where S: Into<String>
+    {
+        self.markdown_sender.send(data.into()).unwrap()
     }
 }
 
