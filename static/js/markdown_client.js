@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderMath() {
-      if (renderMathInElement !== undefined) {
+      if (typeof renderMathInElement === 'function') {
         renderMathInElement(
             document.getElementById("markdown-preview"),
             {
