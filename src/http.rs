@@ -78,6 +78,11 @@ impl Server {
 
         let root = Path::new(env!("CARGO_MANIFEST_DIR"));
 
+        let mut static_dir = root.to_path_buf();
+        static_dir.push("static");
+        assert!(static_dir.is_absolute());
+        server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
+
         let mut markdown_view = root.to_path_buf();
         markdown_view.push("templates/markdown_view.html");
 
@@ -104,11 +109,6 @@ impl Server {
                 }
             };
         });
-
-        let mut static_dir = root.to_path_buf();
-        static_dir.push("static");
-        assert!(static_dir.is_absolute());
-        server.utilize(StaticFilesHandler::new(static_dir.to_str().unwrap()));
 
         let listening = server.listen(self.local_addr).unwrap();
         listening.detach();
