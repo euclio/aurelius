@@ -1,6 +1,6 @@
 [package]
 name = "aurelius"
-version = "0.1.11"
+version = "0.1.12"
 authors = ["Andy Russell <arussell123@gmail.com>"]
 description = "A complete solution for previewing markdown."
 documentation = "https://euclio.github.io/aurelius"
