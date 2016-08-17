@@ -108,6 +108,8 @@ impl Server {
                     _ => {}
                 }
             };
+
+            return response.next_middleware();
         });
 
         let listening = server.listen(self.local_addr).unwrap();
