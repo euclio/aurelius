@@ -14,7 +14,7 @@ license = "MIT/Apache-2.0"
 chan = "0.1.14"
 hoedown = "5.0.0"
 log = "0.3.1"
-nickel = { version = "0.8.1", git = "https://github.com/nickel-org/nickel.rs" }
+nickel = "0.9.0"
 porthole = "0.1.0"
 url = "1.1.0"
 websocket = "~0.17.0"
