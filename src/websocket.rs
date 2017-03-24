@@ -2,21 +2,19 @@
 
 use std::io;
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
-use std::sync::mpsc::channel;
 use std::thread;
 
 use chan;
-use websockets::{Message, Sender, Receiver, WebSocketStream};
+use websockets::{Message, WebSocketStream};
 use websockets::header::WebSocketProtocol;
-use websockets::message::Type;
 use websockets::server::Request;
-use websockets::result::WebSocketError;
 
 /// The WebSocket server.
 ///
 /// Manages WebSocket connections from clients of the HTTP server.
 pub struct Server {
     server: TcpListener,
+    markdown_channel: (chan::Sender<String>, chan::Receiver<String>),
 }
 
 impl Server {
@@ -24,11 +22,29 @@ impl Server {
     pub fn new<A>(socket_addr: A) -> Server
         where A: ToSocketAddrs
     {
-        Server { server: TcpListener::bind(socket_addr).unwrap() }
+        Server {
+            server: TcpListener::bind(socket_addr).unwrap(),
+            markdown_channel: chan::sync(0),
+        }
     }
 
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
         self.server.local_addr()
+    }
+
+    pub fn get_markdown_sender(&self) -> chan::Sender<String> {
+        self.markdown_channel.0.clone()
+    }
+
+    /// Starts the server.
+    pub fn start(&self) {
+        for connection in self.server.incoming() {
+            let connection = connection.unwrap();
+            let markdown_receiver = self.markdown_channel.1.clone();
+            thread::spawn(move || {
+                Self::handle_connection(connection, markdown_receiver);
+            });
+        }
     }
 
     fn handle_connection(connection: TcpStream, markdown_receiver: chan::Receiver<String>) {
@@ -47,105 +63,32 @@ impl Server {
             }
         }
 
-        let client = response.send().unwrap();
+        let mut client = response.send().unwrap();
 
-        // Create the send and recieve channdels for the websocket.
-        let (mut sender, mut receiver) = client.split();
-
-        // Create senders that will send websocket messages between threads.
-        let (message_tx, message_rx) = channel();
-
-        // Message receiver
-        let ws_message_tx = message_tx.clone();
-        let _ = thread::Builder::new()
-            .name("ws_receive_loop".to_owned())
-            .spawn(move || {
-                for message in receiver.incoming_messages() {
-                    let message: Message = match message {
-                        Ok(m) => m,
-                        Err(_) => {
-                            let _ = ws_message_tx.send(Message::close());
-                            return;
-                        }
-                    };
-
-                    match message.opcode {
-                        Type::Close => {
-                            let message = Message::close();
-                            ws_message_tx.send(message).unwrap();
-                            return;
-                        }
-                        Type::Ping => {
-                            let message = Message::pong(message.payload);
-                            ws_message_tx.send(message).unwrap();
-                        }
-                        _ => ws_message_tx.send(message).unwrap(),
-                    }
-                }
-            })
-            .unwrap();
-
-        let _ = thread::Builder::new()
-            .name("ws_send_loop".to_owned())
-            .spawn(move || {
-                for message in message_rx.iter() {
-                    let message: Message = message;
-                    sender.send_message(&message)
-                        .or_else(|e| {
-                            match e {
-                                WebSocketError::IoError(e) => {
-                                    match e.kind() {
-                                        io::ErrorKind::BrokenPipe => Ok(()),
-                                        _ => Err(e),
-                                    }
-                                }
-                                _ => panic!(e),
-                            }
-                        })
-                        .unwrap();
-                }
-            })
-            .unwrap();
-
-        for markdown in markdown_receiver.iter() {
-            message_tx.send(Message::text(markdown)).unwrap();
+        for markdown in &markdown_receiver {
+            client.send_message(&Message::text(markdown)).unwrap();
         }
-    }
-
-    /// Starts the server.
-    ///
-    /// Returns a channel that can be used to send data that will be pushed to clients of the
-    /// server.
-    pub fn start(&mut self) -> chan::Sender<String> {
-        // FIXME: Currently, this channel sends to the first available consumer, not to all.
-        let (markdown_sender, markdown_receiver) = chan::sync(0);
-
-        let server = self.server.try_clone().unwrap();
-
-        thread::spawn(move || {
-            for connection in server.incoming() {
-                let connection = connection.unwrap();
-                let markdown_receiver = markdown_receiver.clone();
-                thread::spawn(move || {
-                    Self::handle_connection(connection, markdown_receiver.clone());
-                });
-            }
-        });
-
-        markdown_sender
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
+
     use websockets::{Client, Message, Receiver};
     use websockets::client::request::Url;
 
     #[test]
     fn initial_send() {
-        let mut server = super::Server::new("localhost:0");
-        let sender = server.start();
-        let url = Url::parse(&format!("ws://localhost:{}", server.local_addr().unwrap().port()))
+        let server = super::Server::new("localhost:0");
+        let sender = server.get_markdown_sender();
+        let server_port = server.local_addr().unwrap().port();
+
+        thread::spawn(move || {
+            server.start();
+        });
+
+        let url = Url::parse(&format!("ws://localhost:{}", server_port))
             .unwrap();
 
         let request = Client::connect(&url).unwrap();
@@ -162,10 +105,15 @@ mod tests {
 
     #[test]
     fn multiple_send() {
-        let mut server = super::Server::new("localhost:0");
-        let sender = server.start();
-        let url = Url::parse(&format!("ws://localhost:{}", server.local_addr().unwrap().port()))
-            .unwrap();
+        let server = super::Server::new("localhost:0");
+        let sender = server.get_markdown_sender();
+        let server_port = server.local_addr().unwrap().port();
+
+        thread::spawn(move || {
+            server.start();
+        });
+
+        let url = Url::parse(&format!("ws://localhost:{}", server_port)).unwrap();
 
         let request = Client::connect(&url).unwrap();
         let response = request.send().unwrap();

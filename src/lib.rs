@@ -67,7 +67,7 @@ pub struct Server {
 /// markdown over a websocket on another port.
 pub struct Handle {
     http_server: HttpServer,
-    websocket_server: WebSocketServer,
+    websocket_addr: SocketAddr,
     markdown_sender: mpsc::Sender<String>,
 }
 
@@ -131,10 +131,15 @@ impl Server {
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&mut self) -> Handle {
         let http_server = HttpServer::new(("localhost", 0), self.config.working_directory.clone());
-        let mut websocket_server = WebSocketServer::new(("localhost", 0));
+        let websocket_server = WebSocketServer::new(("localhost", 0));
+        let websocket_sender = websocket_server.get_markdown_sender();
+        let websocket_addr = websocket_server.local_addr().unwrap();
 
         let (markdown_sender, markdown_receiver) = mpsc::channel::<String>();
-        let websocket_sender = websocket_server.start();
+
+        thread::spawn(move || {
+            websocket_server.start();
+        });
 
         thread::spawn(move || {
             for markdown in markdown_receiver.iter() {
@@ -143,14 +148,12 @@ impl Server {
             }
         });
 
-        let websocket_port = websocket_server.local_addr().unwrap().port();
-
         debug!("Starting http_server");
-        http_server.start(websocket_port, &self.config);
+        http_server.start(websocket_addr.port(), &self.config);
 
         Handle {
             http_server: http_server,
-            websocket_server: websocket_server,
+            websocket_addr: websocket_addr,
             markdown_sender: markdown_sender,
         }
     }
@@ -159,7 +162,7 @@ impl Server {
 impl Handle {
     /// Returns the socket address that the websocket server is listening on.
     pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
-        self.websocket_server.local_addr()
+        Ok(self.websocket_addr)
     }
 
     /// Returns the socket address that the HTTP server is listening on.
