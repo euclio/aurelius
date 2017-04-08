@@ -27,5 +27,5 @@ url = "1.1.0"
 websocket = "~0.17.0"
 
 [dev-dependencies]
-hyper = "0.9.4"
+reqwest = "0.5"
 iron-test = "0.5"

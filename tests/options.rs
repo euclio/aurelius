@@ -1,38 +1,25 @@
 extern crate aurelius;
-extern crate hyper;
-extern crate url;
+extern crate reqwest;
 
 use std::default::Default;
 use std::io::prelude::*;
 
-use hyper::Client;
-use url::Url;
-
-use aurelius::{Config, Handle, Server};
-
-fn get_basic_response(handle: &Handle) -> String {
-    let http_addr = handle.http_addr().unwrap();
-
-    let url = Url::parse(&format!("http://localhost:{}", http_addr.port())).unwrap();
-
-    let mut res = Client::new().get(url).send().unwrap();
-    let mut body = String::new();
-    res.read_to_string(&mut body).unwrap();
-    body
-}
+use aurelius::{Config, Server};
 
 #[test]
 fn custom_css() {
-    let url = "http://scholarlymarkdown.com/scholdoc-distribution/css/core/scholmd-core-latest.css";
+    let css_url = "http://scholarlymarkdown.com/scholdoc-distribution/css/core/scholmd-core-latest.css";
 
-    let mut server =
-        Server::new_with_config(Config { custom_css: String::from(url), ..Default::default() });
+    let mut server = Server::new_with_config(Config {
+        custom_css: String::from(css_url),
+        ..Default::default()
+    });
     let handle = server.start();
-    let response = get_basic_response(&handle);
-
-    assert!(response.contains(url));
+    let url = format!("http://localhost:{}", handle.http_addr().unwrap().port());
+    let mut response = String::new();
+    reqwest::get(&url).unwrap().read_to_string(&mut response).unwrap();
+    assert!(response.contains(&css_url));
 }
-
 
 #[test]
 fn highlight_theme() {
@@ -41,7 +28,9 @@ fn highlight_theme() {
         ..Default::default()
     });
     let handle = server.start();
-    let response = get_basic_response(&handle);
+    let url = format!("http://localhost:{}", handle.http_addr().unwrap().port());
+    let mut response = String::new();
+    reqwest::get(&url).unwrap().read_to_string(&mut response).unwrap();
     let link = "/vendor/highlight.js/styles/darcula.css";
 
     assert!(response.contains(link));
