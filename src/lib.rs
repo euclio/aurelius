@@ -30,15 +30,24 @@
 #![deny(missing_docs)]
 
 extern crate chan;
+extern crate handlebars_iron;
 extern crate hoedown;
+extern crate iron;
+extern crate mount;
 extern crate porthole;
+extern crate serde;
+extern crate staticfile;
 extern crate url;
 extern crate websocket as websockets;
 
 #[macro_use]
-extern crate log;
+extern crate lazy_static;
+
 #[macro_use]
-extern crate nickel;
+extern crate log;
+
+#[macro_use]
+extern crate serde_json;
 
 pub mod browser;
 pub mod markdown;
@@ -99,7 +108,7 @@ impl Default for Config {
             working_directory: env::current_dir().unwrap().to_owned(),
             initial_markdown: "".to_owned(),
             highlight_theme: "github".to_owned(),
-            custom_css: "/vendor/github-markdown-css/github-markdown.css".to_owned(),
+            custom_css: "/_static/vendor/github-markdown-css/github-markdown.css".to_owned(),
         }
     }
 }
@@ -117,7 +126,7 @@ impl Server {
     /// use std::default::Default;
     /// use aurelius::{Config, Server};
     ///
-    /// let server = Server::new_with_config(Config {
+    /// Server::new_with_config(Config {
     ///     highlight_theme: "github".to_owned(), .. Default::default()
     /// });
     /// ```
@@ -130,7 +139,7 @@ impl Server {
     /// Returns a channel that can be used to send markdown to the server. The markdown will be
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&mut self) -> Handle {
-        let http_server = HttpServer::new(("localhost", 0), self.config.working_directory.clone());
+        let mut http_server = HttpServer::new(("localhost", 0), self.config.working_directory.clone());
         let websocket_server = WebSocketServer::new(("localhost", 0));
         let websocket_sender = websocket_server.get_markdown_sender();
         let websocket_addr = websocket_server.local_addr().unwrap();
