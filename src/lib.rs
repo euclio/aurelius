@@ -31,10 +31,10 @@
 
 extern crate chan;
 extern crate handlebars_iron;
-extern crate hoedown;
 extern crate iron;
 extern crate mount;
 extern crate porthole;
+extern crate pulldown_cmark;
 extern crate serde;
 extern crate staticfile;
 extern crate url;

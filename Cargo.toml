@@ -14,17 +14,17 @@ license = "MIT/Apache-2.0"
 chan = "0.1.14"
 handlebars = "0.25"
 handlebars-iron = { version = "0.23", features = ["serde_type"] }
-hoedown = "6"
 iron = "0.5"
 lazy_static = "0.2"
 log = "0.3.1"
 mount = "0.3"
 porthole = "0.1.0"
+pulldown-cmark = "0.0.14"
 serde = "0.9"
 serde_json = "0.9"
 staticfile = "0.4"
 url = "1.1.0"
-websocket = "0.19"
+websocket = { version = "0.19", default-features = false }
 
 [dev-dependencies]
 reqwest = "0.5"

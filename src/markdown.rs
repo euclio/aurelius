@@ -1,8 +1,7 @@
 //! Functions for rendering markdown.
 
-use hoedown::renderer::html;
-use hoedown::{Markdown, Render};
-use hoedown::{AUTOLINK, FENCED_CODE, TABLES};
+use pulldown_cmark::{Parser, html};
+use pulldown_cmark::{OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
 
 /// Renders a markdown string to an HTML string.
 ///
@@ -12,7 +11,10 @@ use hoedown::{AUTOLINK, FENCED_CODE, TABLES};
 /// - Fenced code blocks
 /// - Tables
 pub fn to_html(markdown: &str) -> String {
-    let doc = Markdown::new(markdown).extensions(AUTOLINK | FENCED_CODE | TABLES);
-    let mut html = html::Html::new(html::Flags::empty(), 0);
-    html.render(&doc).to_str().unwrap().to_string()
+    let parser = Parser::new_ext(markdown, OPTION_ENABLE_TABLES | OPTION_ENABLE_FOOTNOTES);
+
+    let mut output = String::new();
+    html::push_html(&mut output, parser);
+
+    output
 }
