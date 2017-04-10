@@ -1,20 +1,21 @@
 //! Contains the WebSocket server component.
 
 use std::io;
-use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
+use std::mem;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::thread;
 
 use chan;
-use websockets::{Message, WebSocketStream};
-use websockets::header::WebSocketProtocol;
-use websockets::server::Request;
+use websockets::{Message, Server as WebSocketServer};
+use websockets::server::NoSslAcceptor;
 
 /// The WebSocket server.
 ///
 /// Manages WebSocket connections from clients of the HTTP server.
 pub struct Server {
-    server: TcpListener,
+    server: Option<WebSocketServer<NoSslAcceptor>>,
     markdown_channel: (chan::Sender<String>, chan::Receiver<String>),
+    local_addr: SocketAddr,
 }
 
 impl Server {
@@ -22,14 +23,18 @@ impl Server {
     pub fn new<A>(socket_addr: A) -> Server
         where A: ToSocketAddrs
     {
+        let server = WebSocketServer::bind(socket_addr).unwrap();
+        let local_addr = server.local_addr().unwrap();
+
         Server {
-            server: TcpListener::bind(socket_addr).unwrap(),
+            server: Some(server),
             markdown_channel: chan::sync(0),
+            local_addr: local_addr,
         }
     }
 
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.server.local_addr()
+        Ok(self.local_addr)
     }
 
     pub fn get_markdown_sender(&self) -> chan::Sender<String> {
@@ -37,36 +42,18 @@ impl Server {
     }
 
     /// Starts the server.
-    pub fn start(&self) {
-        for connection in self.server.incoming() {
-            let connection = connection.unwrap();
+    pub fn start(&mut self) {
+        let server = mem::replace(&mut self.server, None);
+
+        for connection in server.unwrap().filter_map(Result::ok) {
             let markdown_receiver = self.markdown_channel.1.clone();
             thread::spawn(move || {
-                Self::handle_connection(connection, markdown_receiver);
+                let mut client = connection.accept().unwrap();
+
+                for markdown in &markdown_receiver {
+                    client.send_message(&Message::text(markdown)).unwrap();
+                }
             });
-        }
-    }
-
-    fn handle_connection(connection: TcpStream, markdown_receiver: chan::Receiver<String>) {
-        let stream = WebSocketStream::Tcp(connection);
-        let request = Request::read(stream.try_clone().unwrap(), stream.try_clone().unwrap())
-            .unwrap();
-        let headers = request.headers.clone();
-
-        request.validate().unwrap();
-
-        let mut response = request.accept();
-
-        if let Some(&WebSocketProtocol(ref protocols)) = headers.get() {
-            if protocols.contains(&("rust-websocket".to_string())) {
-                response.headers.set(WebSocketProtocol(vec!["rust-websocket".to_string()]));
-            }
-        }
-
-        let mut client = response.send().unwrap();
-
-        for markdown in &markdown_receiver {
-            client.send_message(&Message::text(markdown)).unwrap();
         }
     }
 }
@@ -75,12 +62,12 @@ impl Server {
 mod tests {
     use std::thread;
 
-    use websockets::{Client, Message, Receiver};
-    use websockets::client::request::Url;
+    use websockets::{ClientBuilder, Message};
+    use websockets::client::Url;
 
     #[test]
     fn initial_send() {
-        let server = super::Server::new("localhost:0");
+        let mut server = super::Server::new("localhost:0");
         let sender = server.get_markdown_sender();
         let server_port = server.local_addr().unwrap().port();
 
@@ -91,21 +78,17 @@ mod tests {
         let url = Url::parse(&format!("ws://localhost:{}", server_port))
             .unwrap();
 
-        let request = Client::connect(&url).unwrap();
-        let response = request.send().unwrap();
-        response.validate().unwrap();
-        let (_, mut receiver) = response.begin().split();
+        let mut client = ClientBuilder::new(&url.as_str()).unwrap().connect_insecure().unwrap();
 
-        sender.send("Hello world!".to_owned());
+        sender.send("Hello world!".to_string());
 
-        let message: Message = receiver.recv_message().unwrap();
-        assert_eq!(String::from_utf8(message.payload.into_owned()).unwrap(),
-                   "Hello world!");
+        let message: Message = client.recv_message().unwrap();
+        assert_eq!(String::from_utf8(message.payload.to_vec()).unwrap(), "Hello world!");
     }
 
     #[test]
     fn multiple_send() {
-        let server = super::Server::new("localhost:0");
+        let mut server = super::Server::new("localhost:0");
         let sender = server.get_markdown_sender();
         let server_port = server.local_addr().unwrap().port();
 
@@ -115,20 +98,14 @@ mod tests {
 
         let url = Url::parse(&format!("ws://localhost:{}", server_port)).unwrap();
 
-        let request = Client::connect(&url).unwrap();
-        let response = request.send().unwrap();
-        response.validate().unwrap();
-        let (_, mut receiver) = response.begin().split();
-        let mut messages = receiver.incoming_messages();
+        let mut client = ClientBuilder::new(url.as_str()).unwrap().connect_insecure().unwrap();
+        sender.send("Hello world!".to_string());
+        sender.send("Goodbye world!".to_string());
 
-        sender.send("Hello world!".to_owned());
-        let hello_message: Message = messages.next().unwrap().unwrap();
-        assert_eq!(String::from_utf8(hello_message.payload.into_owned()).unwrap(),
-                   "Hello world!");
+        let hello_message: Message = client.recv_message().unwrap();
+        assert_eq!(String::from_utf8(hello_message.payload.to_vec()).unwrap(), "Hello world!");
 
-        sender.send("Goodbye world!".to_owned());
-        let goodbye_message: Message = messages.next().unwrap().unwrap();
-        assert_eq!(String::from_utf8(goodbye_message.payload.into_owned()).unwrap(),
-                   "Goodbye world!");
+        let goodbye_message: Message = client.recv_message().unwrap();
+        assert_eq!(String::from_utf8(goodbye_message.payload.to_vec()).unwrap(), "Goodbye world!");
     }
 }

@@ -140,7 +140,7 @@ impl Server {
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&mut self) -> Handle {
         let mut http_server = HttpServer::new(("localhost", 0), self.config.working_directory.clone());
-        let websocket_server = WebSocketServer::new(("localhost", 0));
+        let mut websocket_server = WebSocketServer::new(("localhost", 0));
         let websocket_sender = websocket_server.get_markdown_sender();
         let websocket_addr = websocket_server.local_addr().unwrap();
 
