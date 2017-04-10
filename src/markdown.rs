@@ -5,11 +5,13 @@ use pulldown_cmark::{OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
 
 /// Renders a markdown string to an HTML string.
 ///
-/// This function enables the following extensions:
+/// This function renders markdown according to the [CommonMark] spec with the following extensions
+/// enabled:
 ///
-/// - Autolinking email addresses and URLs
-/// - Fenced code blocks
 /// - Tables
+/// - Footnotes
+///
+/// [CommonMark]: http://commonmark.org/
 pub fn to_html(markdown: &str) -> String {
     let parser = Parser::new_ext(markdown, OPTION_ENABLE_TABLES | OPTION_ENABLE_FOOTNOTES);
 
