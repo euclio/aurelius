@@ -18,7 +18,6 @@ iron = "0.5"
 lazy_static = "0.2"
 log = "0.3.1"
 mount = "0.3"
-porthole = "0.1.0"
 pulldown-cmark = { version = "0.0.14", default-features = false }
 serde = "0.9"
 serde_json = "0.9"

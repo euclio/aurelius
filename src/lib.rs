@@ -33,7 +33,6 @@ extern crate chan;
 extern crate handlebars_iron;
 extern crate iron;
 extern crate mount;
-extern crate porthole;
 extern crate pulldown_cmark;
 extern crate serde;
 extern crate staticfile;
@@ -62,7 +61,6 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::thread;
 
-use http::Server as HttpServer;
 use websocket::Server as WebSocketServer;
 
 /// The `Server` type constructs a new markdown preview server.
@@ -75,7 +73,7 @@ pub struct Server {
 /// A server that is listening for HTTP requests on a given port, and broadcasting rendered
 /// markdown over a websocket on another port.
 pub struct Handle {
-    http_server: HttpServer,
+    http_listening: http::Listening,
     websocket_addr: SocketAddr,
     markdown_sender: mpsc::Sender<String>,
 }
@@ -139,7 +137,6 @@ impl Server {
     /// Returns a channel that can be used to send markdown to the server. The markdown will be
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&mut self) -> Handle {
-        let mut http_server = HttpServer::new(("localhost", 0), self.config.working_directory.clone());
         let mut websocket_server = WebSocketServer::new(("localhost", 0));
         let websocket_sender = websocket_server.get_markdown_sender();
         let websocket_addr = websocket_server.local_addr().unwrap();
@@ -158,10 +155,11 @@ impl Server {
         });
 
         debug!("Starting http_server");
-        http_server.start(websocket_addr.port(), &self.config);
+        let http_listening = http::Server::new(&self.config)
+            .listen(("localhost", 0), websocket_addr.port()).unwrap();
 
         Handle {
-            http_server: http_server,
+            http_listening: http_listening,
             websocket_addr: websocket_addr,
             markdown_sender: markdown_sender,
         }
@@ -176,7 +174,7 @@ impl Handle {
 
     /// Returns the socket address that the HTTP server is listening on.
     pub fn http_addr(&self) -> io::Result<SocketAddr> {
-        self.http_server.local_addr()
+        self.http_listening.local_addr()
     }
 
     /// Changes the "current working directory" of the HTTP server. The HTTP server will serve
@@ -184,7 +182,7 @@ impl Handle {
     pub fn change_working_directory<P>(&mut self, dir: P)
         where P: AsRef<Path>
     {
-        self.http_server.change_working_directory(dir);
+        self.http_listening.change_working_directory(dir);
     }
 
     /// Publish new markdown to be rendered by the server.

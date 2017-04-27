@@ -8,12 +8,12 @@ use std::sync::{Arc, Mutex};
 
 use handlebars_iron::{Template, HandlebarsEngine, DirectorySource};
 use iron::prelude::*;
-use iron::{Handler, Listening, status};
+use iron::{self, Handler, status};
 use mount::Mount;
-use porthole;
 use serde_json::Value;
 use staticfile::Static;
 
+use Config;
 use markdown;
 
 lazy_static! {
@@ -24,56 +24,16 @@ lazy_static! {
 ///
 /// The server listens on the provided port, rendering the markdown preview when a GET request is
 /// received at the server root.
-pub struct Server {
-    local_addr: SocketAddr,
-
-    /// The "current working directory" of the server. Any static file requests will be joined to
-    /// this directory.
-    cwd: Arc<Mutex<PathBuf>>,
-
-    /// A handle to the listening instance of the http server.
-    listening: Option<Listening>,
+pub struct Server<'a> {
+    config: &'a Config,
 }
 
-impl Server {
+impl<'a> Server<'a> {
     /// Creates a new server that listens on socket address `addr`.
-    pub fn new<A, P>(addr: A, working_directory: P) -> Server
-        where A: ToSocketAddrs,
-              P: AsRef<Path>
-    {
-        let socket_addr = addr.to_socket_addrs()
-            .unwrap()
-            .map(|addr| {
-                if addr.port() == 0 {
-                    let unused_port = porthole::open().unwrap();
-                    format!("localhost:{}", unused_port)
-                        .to_socket_addrs()
-                        .unwrap()
-                        .next()
-                        .unwrap()
-                } else {
-                    addr
-                }
-            })
-            .next()
-            .unwrap();
-
+    pub fn new(config: &'a Config) -> Server<'a> {
         Server {
-            local_addr: socket_addr,
-            cwd: Arc::new(Mutex::new(working_directory.as_ref().to_owned())),
-            listening: None,
+            config: config,
         }
-    }
-
-    pub fn change_working_directory<P>(&mut self, dir: P)
-        where P: AsRef<Path>
-    {
-        let mut cwd = self.cwd.lock().unwrap();
-        *cwd = dir.as_ref().to_owned();
-    }
-
-    pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        Ok(self.local_addr)
     }
 
     /// Starts the server.
@@ -81,26 +41,50 @@ impl Server {
     /// Once a connection is received, the client will initiate WebSocket connections on
     /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
     /// connection.
-    pub fn start(&mut self, websocket_port: u16, config: &::Config) {
+    pub fn listen<A>(self, address: A, websocket_port: u16) -> io::Result<Listening>
+            where A: ToSocketAddrs {
+        let working_directory = Arc::new(Mutex::new(self.config.working_directory.clone()));
+
         let handler = create_handler(MarkdownPreview {
             template_data: json!({
                 "websocket_port": websocket_port,
-                "initial_markdown": markdown::to_html(&config.initial_markdown),
-                "highlight_theme": config.highlight_theme,
-                "custom_css": config.custom_css,
+                "initial_markdown": markdown::to_html(&self.config.initial_markdown),
+                "highlight_theme": self.config.highlight_theme,
+                "custom_css": self.config.custom_css,
             }),
-            working_directory: self.cwd.clone(),
+            working_directory: working_directory.clone(),
         });
 
-        self.listening = Some(Iron::new(handler).http(self.local_addr).unwrap());
+        let listening = Listening {
+            working_directory: working_directory,
+            listening: Iron::new(handler)
+                .http(address)
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
+        };
+
+        Ok(listening)
     }
 }
 
-impl Drop for Server {
+pub struct Listening {
+    listening: iron::Listening,
+    working_directory: Arc<Mutex<PathBuf>>,
+}
+
+impl Listening {
+    pub fn local_addr(&self) -> io::Result<SocketAddr> {
+        Ok(self.listening.socket)
+    }
+
+    pub fn change_working_directory<P>(&mut self, dir: P) where P: AsRef<Path> {
+        let mut working_directory = self.working_directory.lock().unwrap();
+        *working_directory = dir.as_ref().to_owned();
+    }
+}
+
+impl Drop for Listening {
     fn drop(&mut self) {
-        if let Some(ref mut listening) = self.listening {
-            listening.close().unwrap();
-        }
+        self.listening.close().unwrap();
     }
 }
 
