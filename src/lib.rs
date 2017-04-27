@@ -58,10 +58,6 @@ use std::env;
 use std::net::SocketAddr;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
-use std::thread;
-
-use websocket::Server as WebSocketServer;
 
 /// The `Server` type constructs a new markdown preview server.
 ///
@@ -74,8 +70,7 @@ pub struct Server {
 /// markdown over a websocket on another port.
 pub struct Handle {
     http_listening: http::Listening,
-    websocket_addr: SocketAddr,
-    markdown_sender: mpsc::Sender<String>,
+    websocket_listening: websocket::Listening,
 }
 
 /// Configuration for the markdown server.
@@ -137,31 +132,16 @@ impl Server {
     /// Returns a channel that can be used to send markdown to the server. The markdown will be
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&mut self) -> Handle {
-        let mut websocket_server = WebSocketServer::new(("localhost", 0));
-        let websocket_sender = websocket_server.get_markdown_sender();
-        let websocket_addr = websocket_server.local_addr().unwrap();
-
-        let (markdown_sender, markdown_receiver) = mpsc::channel::<String>();
-
-        thread::spawn(move || {
-            websocket_server.start();
-        });
-
-        thread::spawn(move || {
-            for markdown in markdown_receiver.iter() {
-                let html: String = markdown::to_html(&markdown);
-                websocket_sender.send(html);
-            }
-        });
+        let websocket_listening = websocket::Server::new().listen(("localhost", 0)).unwrap();
 
         debug!("Starting http_server");
+        let websocket_port = websocket_listening.local_addr().unwrap().port();
         let http_listening = http::Server::new(&self.config)
-            .listen(("localhost", 0), websocket_addr.port()).unwrap();
+            .listen(("localhost", 0), websocket_port).unwrap();
 
         Handle {
             http_listening: http_listening,
-            websocket_addr: websocket_addr,
-            markdown_sender: markdown_sender,
+            websocket_listening: websocket_listening,
         }
     }
 }
@@ -169,7 +149,7 @@ impl Server {
 impl Handle {
     /// Returns the socket address that the websocket server is listening on.
     pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
-        Ok(self.websocket_addr)
+        self.websocket_listening.local_addr()
     }
 
     /// Returns the socket address that the HTTP server is listening on.
@@ -186,10 +166,9 @@ impl Handle {
     }
 
     /// Publish new markdown to be rendered by the server.
-    pub fn send<S>(&self, data: S)
-        where S: Into<String>
-    {
-        self.markdown_sender.send(data.into()).unwrap()
+    pub fn send(&self, markdown: &str) {
+        let html_sender = self.websocket_listening.html_sender();
+        html_sender.send(markdown::to_html(markdown));
     }
 }
 

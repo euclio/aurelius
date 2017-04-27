@@ -1,111 +1,111 @@
 //! Contains the WebSocket server component.
 
 use std::io;
-use std::mem;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::thread;
 
 use chan;
 use websockets::{Message, Server as WebSocketServer};
-use websockets::server::NoSslAcceptor;
 
 /// The WebSocket server.
 ///
 /// Manages WebSocket connections from clients of the HTTP server.
 pub struct Server {
-    server: Option<WebSocketServer<NoSslAcceptor>>,
-    markdown_channel: (chan::Sender<String>, chan::Receiver<String>),
-    local_addr: SocketAddr,
+    _private: (),
+}
+
+pub struct Listening {
+    addr: SocketAddr,
+    html_sender: chan::Sender<String>,
+}
+
+impl Listening {
+    pub fn local_addr(&self) -> io::Result<SocketAddr> {
+        Ok(self.addr)
+    }
+
+    pub fn html_sender(&self) -> &chan::Sender<String> {
+        &self.html_sender
+    }
+
+
 }
 
 impl Server {
     /// Creates a new server that listens on port `port`.
-    pub fn new<A>(socket_addr: A) -> Server
-        where A: ToSocketAddrs
-    {
-        let server = WebSocketServer::bind(socket_addr).unwrap();
-        let local_addr = server.local_addr().unwrap();
-
+    pub fn new() -> Server {
         Server {
-            server: Some(server),
-            markdown_channel: chan::sync(0),
-            local_addr: local_addr,
+            _private: (),
         }
-    }
-
-    pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        Ok(self.local_addr)
-    }
-
-    pub fn get_markdown_sender(&self) -> chan::Sender<String> {
-        self.markdown_channel.0.clone()
     }
 
     /// Starts the server.
-    pub fn start(&mut self) {
-        let server = mem::replace(&mut self.server, None);
+    pub fn listen<A>(self, addr: A) -> io::Result<Listening> where A: ToSocketAddrs {
+        let server = WebSocketServer::bind(addr)?;
+        let addr = server.local_addr()?;
 
-        for connection in server.unwrap().filter_map(Result::ok) {
-            let markdown_receiver = self.markdown_channel.1.clone();
-            thread::spawn(move || {
-                let mut client = connection.accept().unwrap();
+        let (html_sender, html_receiver) = chan::sync::<String>(0);
 
-                for markdown in &markdown_receiver {
-                    client.send_message(&Message::text(markdown)).unwrap();
-                }
-            });
-        }
+        thread::spawn(move || {
+            for connection in server.filter_map(Result::ok) {
+                let html_receiver = html_receiver.clone();
+                thread::spawn(move || {
+                    let mut client = connection.accept().unwrap();
+
+                    for html in &html_receiver {
+                        client.send_message(&Message::text(html)).unwrap();
+                    }
+                });
+            }
+        });
+
+        let listening = Listening {
+            addr: addr,
+            html_sender: html_sender,
+        };
+
+        Ok(listening)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::thread;
-
     use websockets::{ClientBuilder, Message};
     use websockets::client::Url;
 
     #[test]
     fn initial_send() {
-        let mut server = super::Server::new("localhost:0");
-        let sender = server.get_markdown_sender();
+        let server = super::Server::new().listen("localhost:0").unwrap();
         let server_port = server.local_addr().unwrap().port();
-
-        thread::spawn(move || {
-            server.start();
-        });
+        let sender = server.html_sender();
 
         let url = Url::parse(&format!("ws://localhost:{}", server_port))
             .unwrap();
 
         let mut client = ClientBuilder::new(&url.as_str()).unwrap().connect_insecure().unwrap();
 
-        sender.send("Hello world!".to_string());
+        sender.send("<p>Hello world!</p>".to_string());
 
         let message: Message = client.recv_message().unwrap();
-        assert_eq!(String::from_utf8(message.payload.to_vec()).unwrap(), "Hello world!");
+        assert_eq!(String::from_utf8(message.payload.to_vec()).unwrap(), "<p>Hello world!</p>");
     }
 
     #[test]
     fn multiple_send() {
-        let mut server = super::Server::new("localhost:0");
-        let sender = server.get_markdown_sender();
+        let server = super::Server::new().listen("localhost:0").unwrap();
         let server_port = server.local_addr().unwrap().port();
-
-        thread::spawn(move || {
-            server.start();
-        });
+        let sender = server.html_sender();
 
         let url = Url::parse(&format!("ws://localhost:{}", server_port)).unwrap();
 
         let mut client = ClientBuilder::new(url.as_str()).unwrap().connect_insecure().unwrap();
-        sender.send("Hello world!".to_string());
-        sender.send("Goodbye world!".to_string());
+        sender.send("<p>Hello world!</p>".to_string());
+        sender.send("<p>Goodbye world!</p>".to_string());
 
         let hello_message: Message = client.recv_message().unwrap();
-        assert_eq!(String::from_utf8(hello_message.payload.to_vec()).unwrap(), "Hello world!");
+        assert_eq!(String::from_utf8(hello_message.payload.to_vec()).unwrap(), "<p>Hello world!</p>");
 
         let goodbye_message: Message = client.recv_message().unwrap();
-        assert_eq!(String::from_utf8(goodbye_message.payload.to_vec()).unwrap(), "Goodbye world!");
+        assert_eq!(String::from_utf8(goodbye_message.payload.to_vec()).unwrap(), "<p>Goodbye world!</p>");
     }
 }
