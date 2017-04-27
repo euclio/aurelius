@@ -12,15 +12,14 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 chan = "0.1.14"
-handlebars = "0.25"
-handlebars-iron = { version = "0.23", features = ["serde_type"] }
+handlebars-iron = "0.24"
 iron = "0.5"
 lazy_static = "0.2"
 log = "0.3.1"
 mount = "0.3"
 pulldown-cmark = { version = "0.0.14", default-features = false }
-serde = "0.9"
-serde_json = "0.9"
+serde = "1"
+serde_json = "1"
 staticfile = "0.4"
 url = "1.1.0"
 websocket = { version = "0.19", default-features = false }
