@@ -66,9 +66,11 @@ pub struct Server {
     config: Config,
 }
 
-/// A server that is listening for HTTP requests on a given port, and broadcasting rendered
-/// markdown over a websocket on another port.
-pub struct Handle {
+/// A handle to an active preview server.
+///
+/// The server is listening for HTTP requests on a given port, and broadcasting rendered markdown
+/// over a websocket connection on another port.
+pub struct Listening {
     http_listening: http::Listening,
     websocket_listening: websocket::Listening,
 }
@@ -131,22 +133,24 @@ impl Server {
     ///
     /// Returns a channel that can be used to send markdown to the server. The markdown will be
     /// sent as HTML to all clients of the websocket server.
-    pub fn start(&mut self) -> Handle {
-        let websocket_listening = websocket::Server::new().listen(("localhost", 0)).unwrap();
+    pub fn start(&mut self) -> io::Result<Listening> {
+        let websocket_listening = websocket::Server::new().listen(("localhost", 0))?;
 
         debug!("Starting http_server");
-        let websocket_port = websocket_listening.local_addr().unwrap().port();
+        let websocket_port = websocket_listening.local_addr()?.port();
         let http_listening = http::Server::new(&self.config)
             .listen(("localhost", 0), websocket_port).unwrap();
 
-        Handle {
+        let listening = Listening {
             http_listening: http_listening,
             websocket_listening: websocket_listening,
-        }
+        };
+
+        Ok(listening)
     }
 }
 
-impl Handle {
+impl Listening {
     /// Returns the socket address that the websocket server is listening on.
     pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
         self.websocket_listening.local_addr()
@@ -179,6 +183,6 @@ mod tests {
     #[test]
     fn sanity() {
         let mut server = Server::new();
-        server.start();
+        server.start().unwrap();
     }
 }

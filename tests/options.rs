@@ -14,7 +14,7 @@ fn custom_css() {
         custom_css: String::from(css_url),
         ..Default::default()
     });
-    let handle = server.start();
+    let handle = server.start().unwrap();
     let url = format!("http://localhost:{}", handle.http_addr().unwrap().port());
     let mut response = String::new();
     reqwest::get(&url).unwrap().read_to_string(&mut response).unwrap();
@@ -27,7 +27,7 @@ fn highlight_theme() {
         highlight_theme: String::from("darcula"),
         ..Default::default()
     });
-    let handle = server.start();
+    let handle = server.start().unwrap();
     let url = format!("http://localhost:{}", handle.http_addr().unwrap().port());
     let mut response = String::new();
     reqwest::get(&url).unwrap().read_to_string(&mut response).unwrap();

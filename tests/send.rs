@@ -10,7 +10,7 @@ use aurelius::Server;
 #[test]
 fn simple() {
     let mut server = Server::new();
-    let handle = server.start();
+    let handle = server.start().unwrap();
 
     let websocket_port = handle.websocket_addr().unwrap().port();
 
