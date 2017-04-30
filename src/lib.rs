@@ -143,10 +143,12 @@ impl Server {
     /// Returns a channel that can be used to send markdown to the server. The markdown will be
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&self) -> io::Result<Listening> {
+        debug!("starting websocket server");
         let websocket_listening = websocket::Server::new()
             .listen(("localhost", self.websocket_port))?;
+        debug!("websockets listening on {}", websocket_listening.local_addr().unwrap());
 
-        debug!("Starting http_server");
+        debug!("starting http_server");
         let assigned_websocket_port = websocket_listening.local_addr()?.port();
         let http_listening = http::Server::new(
             self.working_directory.clone(),
@@ -155,6 +157,7 @@ impl Server {
                  css: self.css.clone(),
                  highlight_theme: self.highlight_theme.clone(),
             }).listen(("localhost", self.http_port), &self.initial_markdown)?;
+        debug!("http listening on {}", http_listening.local_addr().unwrap());
 
         let listening = Listening {
             http_listening: http_listening,
