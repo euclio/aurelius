@@ -9,8 +9,7 @@ use aurelius::Server;
 
 #[test]
 fn change_working_directory() {
-    let mut server = Server::new();
-    let mut listening = server.start().unwrap();
+    let mut listening = Server::new().start().unwrap();
 
     // Try to find a resource outside of the working directory.
     let http_port = listening.http_addr().unwrap().port();

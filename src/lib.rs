@@ -59,87 +59,102 @@ use std::net::SocketAddr;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// The `Server` type constructs a new markdown preview server.
+const DEFAULT_HIGHLIGHT_THEME: &'static str = "github";
+const DEFAULT_CSS: &'static str = "/_static/vendor/github-markdown-css/github-markdown.css";
+
+/// An instance of the a markdown preview server.
 ///
 /// The server will listen for HTTP and WebSocket connections on arbitrary ports.
-pub struct Server {
-    config: Config,
-}
-
-/// A handle to an active preview server.
 ///
-/// The server is listening for HTTP requests on a given port, and broadcasting rendered markdown
-/// over a websocket connection on another port.
-pub struct Listening {
-    http_listening: http::Listening,
-    websocket_listening: websocket::Listening,
-}
-
-/// Configuration for the markdown server.
+/// # Examples
+///
+/// ```no_run
+/// use aurelius::Server;
+///
+/// let listening = Server::new()
+///     .initial_markdown("<h1>Hello, world</h1>")
+///     .start()
+///     .unwrap();
+/// ```
 #[derive(Debug, Clone)]
-pub struct Config {
-    /// The initial markdown to render when starting the server.
-    pub initial_markdown: String,
-
-    /// The syntax highlighting theme to use.
-    ///
-    /// Defaults to the github syntax highlighting theme.
-    pub highlight_theme: String,
-
-    /// The directory that static files should be served out of.
-    ///
-    /// Defaults to the current working directory.
-    pub working_directory: PathBuf,
-
-    /// Custom CSS that should be used to style the markdown.
-    ///
-    /// Defaults to the github styles.
-    pub custom_css: String,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            working_directory: env::current_dir().unwrap().to_owned(),
-            initial_markdown: "".to_owned(),
-            highlight_theme: "github".to_owned(),
-            custom_css: "/_static/vendor/github-markdown-css/github-markdown.css".to_owned(),
-        }
-    }
+pub struct Server {
+    initial_markdown: String,
+    working_directory: PathBuf,
+    highlight_theme: String,
+    css: String,
+    websocket_port: u16,
+    http_port: u16,
 }
 
 impl Server {
-    /// Creates a new markdown preview server.
-    pub fn new() -> Server {
-        Self::new_with_config(Config { ..Default::default() })
+    /// Create a new markdown preview server.
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    /// Creates a new configuration with the config struct.
+    /// Set the initial markdown to render when starting the server.
+    pub fn initial_markdown<S: Into<String>>(&mut self, markdown: S) -> &Self {
+        self.initial_markdown = markdown.into();
+        self
+    }
+
+    /// Set the directory that static files should be served out of.
     ///
-    /// # Example
-    /// ```
-    /// use std::default::Default;
-    /// use aurelius::{Config, Server};
+    /// Defaults to the process' current working directory.
+    pub fn working_directory<D: Into<PathBuf>>(&mut self, directory: D) -> &Self {
+        self.working_directory = directory.into();
+        self
+    }
+
+    /// Set the syntax highlighting theme to use.
     ///
-    /// Server::new_with_config(Config {
-    ///     highlight_theme: "github".to_owned(), .. Default::default()
-    /// });
-    /// ```
-    pub fn new_with_config(config: Config) -> Server {
-        Server { config: config }
+    /// Defaults to the "github" theme.
+    pub fn highlight_theme<T: Into<String>>(&mut self, theme: T) -> &Self {
+        self.highlight_theme = theme.into();
+        self
+    }
+
+    /// Set the CSS that should be used to style the markdown.
+    ///
+    /// Defaults to github's CSS styles.
+    pub fn css<C: Into<String>>(&mut self, css: C) -> &Self {
+        self.css = css.into();
+        self
+    }
+
+    /// Set the port to listen for websocket connections on.
+    ///
+    /// Defaults to an arbitrary port assigned by the OS.
+    pub fn websocket_port(&mut self, port: u16) -> &Self {
+        self.websocket_port = port;
+        self
+    }
+
+    /// Set the port to listen for HTTP connections on.
+    ///
+    /// Defaults to an arbitrary port assigned by the OS.
+    pub fn http_port(&mut self, port: u16) -> &Self {
+        self.http_port = port;
+        self
     }
 
     /// Starts the server.
     ///
     /// Returns a channel that can be used to send markdown to the server. The markdown will be
     /// sent as HTML to all clients of the websocket server.
-    pub fn start(&mut self) -> io::Result<Listening> {
-        let websocket_listening = websocket::Server::new().listen(("localhost", 0))?;
+    pub fn start(&self) -> io::Result<Listening> {
+        let websocket_listening = websocket::Server::new()
+            .listen(("localhost", self.websocket_port))?;
 
         debug!("Starting http_server");
-        let websocket_port = websocket_listening.local_addr()?.port();
-        let http_listening = http::Server::new(&self.config)
-            .listen(("localhost", 0), websocket_port).unwrap();
+        let assigned_websocket_port = websocket_listening.local_addr()?.port();
+        let http_listening = http::Server::new(
+            self.working_directory.clone(),
+            assigned_websocket_port,
+            http::StyleConfig {
+                 css: self.css.clone(),
+                 highlight_theme: self.highlight_theme.clone(),
+            }).listen(("localhost", self.http_port), &self.initial_markdown)?;
 
         let listening = Listening {
             http_listening: http_listening,
@@ -150,6 +165,27 @@ impl Server {
     }
 }
 
+impl Default for Server {
+    fn default() -> Self {
+        Server {
+            working_directory: env::current_dir().unwrap().to_owned(),
+            initial_markdown: String::default(),
+            highlight_theme: DEFAULT_HIGHLIGHT_THEME.to_string(),
+            css: DEFAULT_CSS.to_string(),
+            websocket_port: 0,
+            http_port: 0,
+        }
+    }
+}
+
+/// A handle to an active preview server.
+///
+/// The server is listening for HTTP requests on a given port, and broadcasting rendered markdown
+/// over a websocket connection on another port.
+pub struct Listening {
+    http_listening: http::Listening,
+    websocket_listening: websocket::Listening,
+}
 impl Listening {
     /// Returns the socket address that the websocket server is listening on.
     pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
@@ -182,7 +218,7 @@ mod tests {
 
     #[test]
     fn sanity() {
-        let mut server = Server::new();
+        let server = Server::new();
         server.start().unwrap();
     }
 }

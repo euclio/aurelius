@@ -13,7 +13,6 @@ use mount::Mount;
 use serde_json::Value;
 use staticfile::Static;
 
-use Config;
 use markdown;
 
 lazy_static! {
@@ -24,15 +23,24 @@ lazy_static! {
 ///
 /// The server listens on the provided port, rendering the markdown preview when a GET request is
 /// received at the server root.
-pub struct Server<'a> {
-    config: &'a Config,
+pub struct Server {
+    websocket_port: u16,
+    styles: StyleConfig,
+    working_directory: PathBuf,
 }
 
-impl<'a> Server<'a> {
+pub struct StyleConfig {
+    pub highlight_theme: String,
+    pub css: String,
+}
+
+impl Server {
     /// Creates a new server that listens on socket address `addr`.
-    pub fn new(config: &'a Config) -> Server<'a> {
+    pub fn new(working_directory: PathBuf, websocket_port: u16, styles: StyleConfig) -> Server {
         Server {
-            config: config,
+            working_directory: working_directory,
+            websocket_port: websocket_port,
+            styles: styles,
         }
     }
 
@@ -41,16 +49,16 @@ impl<'a> Server<'a> {
     /// Once a connection is received, the client will initiate WebSocket connections on
     /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
     /// connection.
-    pub fn listen<A>(self, address: A, websocket_port: u16) -> io::Result<Listening>
+    pub fn listen<A>(self, address: A, initial_markdown: &str) -> io::Result<Listening>
             where A: ToSocketAddrs {
-        let working_directory = Arc::new(Mutex::new(self.config.working_directory.clone()));
+        let working_directory = Arc::new(Mutex::new(self.working_directory));
 
         let handler = create_handler(MarkdownPreview {
             template_data: json!({
-                "websocket_port": websocket_port,
-                "initial_markdown": markdown::to_html(&self.config.initial_markdown),
-                "highlight_theme": self.config.highlight_theme,
-                "custom_css": self.config.custom_css,
+                "websocket_port": self.websocket_port,
+                "initial_markdown": markdown::to_html(initial_markdown),
+                "highlight_theme": self.styles.highlight_theme,
+                "custom_css": self.styles.css,
             }),
             working_directory: working_directory.clone(),
         });
@@ -147,19 +155,16 @@ mod tests {
     use iron::Headers;
     use self::iron_test::request;
 
-    use Config;
-    use markdown;
     use super::MarkdownPreview;
 
     #[test]
     fn simple() {
-        let config = Config::default();
         let handler = super::create_handler(MarkdownPreview {
             template_data: json!({
                 "websocket_port": 1337,
-                "initial_markdown": markdown::to_html(&config.initial_markdown),
-                "highlight_theme": config.highlight_theme,
-                "custom_css": config.custom_css,
+                "initial_markdown": "",
+                "highlight_theme": ::DEFAULT_HIGHLIGHT_THEME,
+                "custom_css": ::DEFAULT_CSS,
             }),
             working_directory: Arc::new(Mutex::new(PathBuf::new())),
         });
