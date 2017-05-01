@@ -1,9 +1,17 @@
 language: rust
+
 sudo: false
+
 rust:
   - stable
   - beta
   - nightly
+
 matrix:
   allow_failures:
     - rust: nightly
+
+script:
+  - cargo build
+  - cargo test
+  - cargo test --no-default-features --features json-rpc
