@@ -16,7 +16,7 @@ use url::Url;
 /// | -------- | ---------- |
 /// | Linux    | `xdg-open` |
 /// | OS X     | `open -g   |
-/// | Windows  | `start`    |
+/// | Windows  | `explorer`    |
 ///
 /// # Panics
 /// Panics if called on an unsupported operating system.
@@ -26,8 +26,7 @@ pub fn open(url: &str) -> Result<Child> {
     } else if cfg!(target_os = "macos") {
         ("open", vec!["-g"])
     } else if cfg!(target_os = "windows") {
-        // `start` requires an empty string as its first parameter.
-        ("start", vec![""])
+        ("explorer", vec![])
     } else {
         panic!("unsupported OS")
     };
