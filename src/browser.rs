@@ -1,13 +1,12 @@
 //! Functions for interacting with browser processes.
 
 use std::process::{Command, Child, Stdio};
-use std::io::Result;
 
 use url::Url;
 
+use errors::*;
+
 /// Opens a browser window at the specified URL in a new process.
-///
-/// Returns an `io::Result` containing the child process.
 ///
 /// This function uses platform-specific utilities to determine the user's default browser. The
 /// following platforms are supported:
@@ -15,38 +14,40 @@ use url::Url;
 /// | Platform | Program    |
 /// | -------- | ---------- |
 /// | Linux    | `xdg-open` |
-/// | OS X     | `open -g   |
-/// | Windows  | `explorer`    |
+/// | OS X     | `open -g`  |
+/// | Windows  | `explorer` |
 ///
 /// # Panics
 /// Panics if called on an unsupported operating system.
 pub fn open(url: &str) -> Result<Child> {
-    let (browser, args) = if cfg!(target_os = "linux") {
-        ("xdg-open", vec![])
+    let command = if cfg!(target_os = "linux") {
+        Command::new("xdg-open")
     } else if cfg!(target_os = "macos") {
-        ("open", vec!["-g"])
+        let mut command = Command::new("open");
+        command.arg("-g");
+        command
     } else if cfg!(target_os = "windows") {
-        ("explorer", vec![])
+        Command::new("explorer")
     } else {
-        panic!("unsupported OS")
+        bail!("unsupported OS: set a browser to use explicitly")
     };
-    open_specific(url, &browser, &args)
+    open_specific(url, command)
 }
 
 /// Opens a specified browser in a new process.
 ///
 /// The browser will be called with any supplied arguments in addition to the URL as an additional
 /// argument.
-///
-/// Returns an `io::Result` containing the child process.
-pub fn open_specific(url: &str, browser: &str, browser_args: &[&str]) -> Result<Child> {
-    let url = Url::parse(url).unwrap();
-    debug!("starting process '{:?}' with url {:?}", browser, url);
+pub fn open_specific(url: &str, mut browser: Command) -> Result<Child> {
+    let url = Url::parse(url).chain_err(|| "error parsing URL for the browser")?;
+    debug!("starting process '{:?}' with url {}", browser, url);
 
-    Command::new(browser)
-        .args(browser_args)
+    let child = browser
         .arg(url.to_string())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
+        .chain_err(|| "error executing browser")?;
+
+    Ok(child)
 }

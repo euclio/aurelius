@@ -29,6 +29,8 @@
 
 #![deny(missing_docs)]
 
+#![recursion_limit = "1024"]
+
 extern crate chan;
 extern crate handlebars_iron;
 extern crate iron;
@@ -40,6 +42,9 @@ extern crate url;
 extern crate websocket as websockets;
 
 #[macro_use]
+extern crate error_chain;
+
+#[macro_use]
 extern crate lazy_static;
 
 #[macro_use]
@@ -49,6 +54,7 @@ extern crate log;
 extern crate serde_json;
 
 pub mod browser;
+pub mod errors;
 pub mod markdown;
 
 mod http;
@@ -146,7 +152,7 @@ impl Server {
         debug!("starting websocket server");
         let websocket_listening = websocket::Server::new()
             .listen(("localhost", self.websocket_port))?;
-        debug!("websockets listening on {}", websocket_listening.local_addr().unwrap());
+        debug!("websockets listening on {}", websocket_listening.local_addr()?);
 
         debug!("starting http_server");
         let assigned_websocket_port = websocket_listening.local_addr()?.port();
@@ -157,7 +163,7 @@ impl Server {
                  css: self.css.clone(),
                  highlight_theme: self.highlight_theme.clone(),
             }).listen(("localhost", self.http_port), &self.initial_markdown)?;
-        debug!("http listening on {}", http_listening.local_addr().unwrap());
+        debug!("http listening on {}", http_listening.local_addr()?);
 
         let listening = Listening {
             http_listening: http_listening,

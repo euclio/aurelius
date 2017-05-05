@@ -12,6 +12,7 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 chan = "0.1.14"
+error-chain = "0.10"
 handlebars-iron = "0.24"
 iron = "0.5"
 lazy_static = "0.2"
