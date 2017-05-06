@@ -13,8 +13,6 @@ use mount::Mount;
 use serde_json::Value;
 use staticfile::Static;
 
-use markdown;
-
 lazy_static! {
     static ref CRATE_ROOT: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 }
@@ -49,14 +47,14 @@ impl Server {
     /// Once a connection is received, the client will initiate WebSocket connections on
     /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
     /// connection.
-    pub fn listen<A>(self, address: A, initial_markdown: &str) -> io::Result<Listening>
+    pub fn listen<A>(self, address: A, initial_html: &str) -> io::Result<Listening>
             where A: ToSocketAddrs {
         let working_directory = Arc::new(Mutex::new(self.working_directory));
 
         let handler = create_handler(MarkdownPreview {
             template_data: json!({
                 "websocket_port": self.websocket_port,
-                "initial_markdown": markdown::to_html(initial_markdown),
+                "initial_html": initial_html,
                 "highlight_theme": self.styles.highlight_theme,
                 "custom_css": self.styles.css,
             }),

@@ -37,6 +37,7 @@ extern crate iron;
 extern crate mount;
 extern crate pulldown_cmark;
 extern crate serde;
+extern crate shlex;
 extern crate staticfile;
 extern crate url;
 extern crate websocket as websockets;
@@ -61,9 +62,14 @@ mod http;
 mod websocket;
 
 use std::env;
-use std::net::SocketAddr;
 use std::io;
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use shlex::Shlex;
+
+use errors::*;
 
 const DEFAULT_HIGHLIGHT_THEME: &'static str = "github";
 const DEFAULT_CSS: &'static str = "/_static/vendor/github-markdown-css/github-markdown.css";
@@ -90,6 +96,7 @@ pub struct Server {
     css: String,
     websocket_port: u16,
     http_port: u16,
+    external_renderer: Option<String>,
 }
 
 impl Server {
@@ -144,15 +151,25 @@ impl Server {
         self
     }
 
+    /// Set an external command to use instead of the in-memory markdown renderer.
+    ///
+    /// The command should read markdown from stdin, and output markdown on stdout.
+    pub fn external_renderer<C: Into<String>>(&mut self, command: C) -> &Self {
+        self.external_renderer = Some(command.into());
+        self
+    }
+
     /// Starts the server.
     ///
     /// Returns a channel that can be used to send markdown to the server. The markdown will be
     /// sent as HTML to all clients of the websocket server.
-    pub fn start(&self) -> io::Result<Listening> {
+    pub fn start(&self) -> Result<Listening> {
         debug!("starting websocket server");
         let websocket_listening = websocket::Server::new()
             .listen(("localhost", self.websocket_port))?;
         debug!("websockets listening on {}", websocket_listening.local_addr()?);
+
+        let initial_html = markdown_to_html(&self.initial_markdown, &self.external_renderer)?;
 
         debug!("starting http_server");
         let assigned_websocket_port = websocket_listening.local_addr()?.port();
@@ -162,12 +179,13 @@ impl Server {
             http::StyleConfig {
                  css: self.css.clone(),
                  highlight_theme: self.highlight_theme.clone(),
-            }).listen(("localhost", self.http_port), &self.initial_markdown)?;
+            }).listen(("localhost", self.http_port), &initial_html)?;
         debug!("http listening on {}", http_listening.local_addr()?);
 
         let listening = Listening {
             http_listening: http_listening,
             websocket_listening: websocket_listening,
+            external_renderer: self.external_renderer.clone(),
         };
 
         Ok(listening)
@@ -183,6 +201,7 @@ impl Default for Server {
             css: DEFAULT_CSS.to_string(),
             websocket_port: 0,
             http_port: 0,
+            external_renderer: None,
         }
     }
 }
@@ -194,7 +213,9 @@ impl Default for Server {
 pub struct Listening {
     http_listening: http::Listening,
     websocket_listening: websocket::Listening,
+    external_renderer: Option<String>,
 }
+
 impl Listening {
     /// Returns the socket address that the websocket server is listening on.
     pub fn websocket_addr(&self) -> io::Result<SocketAddr> {
@@ -215,10 +236,27 @@ impl Listening {
     }
 
     /// Publish new markdown to be rendered by the server.
-    pub fn send(&self, markdown: &str) {
+    pub fn send(&self, markdown: &str) -> Result<()> {
         let html_sender = self.websocket_listening.html_sender();
-        html_sender.send(markdown::to_html(markdown));
+        html_sender.send(markdown_to_html(&markdown, &self.external_renderer)?);
+
+        Ok(())
     }
+}
+
+fn markdown_to_html(markdown: &str, external_command: &Option<String>) -> Result<String> {
+    let html = if let Some(ref command) = *external_command {
+        let mut shlex = Shlex::new(command);
+
+        let renderer = shlex.next().ok_or_else(|| "no external renderer specified")?;
+        let mut command = Command::new(renderer);
+        command.args(shlex);
+        markdown::to_html_external(command, markdown)?
+    } else {
+        markdown::to_html_cmark(markdown)
+    };
+
+    Ok(html)
 }
 
 #[cfg(test)]

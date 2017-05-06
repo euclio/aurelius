@@ -21,6 +21,7 @@ mount = "0.3"
 pulldown-cmark = { version = "0.0.14", default-features = false }
 serde = "1"
 serde_json = "1"
+shlex = "0.1"
 staticfile = "0.4"
 url = "1.1.0"
 websocket = { version = "0.19", default-features = false }
