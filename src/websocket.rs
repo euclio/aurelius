@@ -24,8 +24,13 @@ impl Listening {
         Ok(self.addr)
     }
 
-    pub fn html_sender(&self) -> &chan::Sender<String> {
-        &self.html_sender
+    pub fn send(&self, html: String) {
+        let sender = &self.html_sender;
+
+        chan_select! {
+            default => (),
+            sender.send(html) => (),
+        }
     }
 }
 
@@ -43,14 +48,14 @@ impl Server {
         let server = WebSocketServer::bind(addr)?;
         let addr = server.local_addr()?;
 
-        let (html_sender, html_receiver) = chan::sync::<String>(0);
+        let (html_sender, html_receiver) = chan::sync(3);
 
         thread::spawn(move || for connection in server.filter_map(Result::ok) {
-            let html_receiver = html_receiver.clone();
+            let receiver = html_receiver.clone();
             thread::spawn(move || {
                 let mut client = connection.accept().unwrap();
 
-                for html in &html_receiver {
+                for html in &receiver {
                     client.send_message(&Message::text(html)).unwrap();
                 }
             });
@@ -74,7 +79,6 @@ mod tests {
     fn initial_send() {
         let server = super::Server::new().listen("localhost:0").unwrap();
         let server_port = server.local_addr().unwrap().port();
-        let sender = server.html_sender();
 
         let url = Url::parse(&format!("ws://localhost:{}", server_port)).unwrap();
 
@@ -83,7 +87,7 @@ mod tests {
             .connect_insecure()
             .unwrap();
 
-        sender.send("<p>Hello world!</p>".to_string());
+        server.send("<p>Hello world!</p>".to_string());
 
         let message: Message = client.recv_message().unwrap();
         assert_eq!(
@@ -96,7 +100,6 @@ mod tests {
     fn multiple_send() {
         let server = super::Server::new().listen("localhost:0").unwrap();
         let server_port = server.local_addr().unwrap().port();
-        let sender = server.html_sender();
 
         let url = Url::parse(&format!("ws://localhost:{}", server_port)).unwrap();
 
@@ -104,8 +107,8 @@ mod tests {
             .unwrap()
             .connect_insecure()
             .unwrap();
-        sender.send("<p>Hello world!</p>".to_string());
-        sender.send("<p>Goodbye world!</p>".to_string());
+        server.send("<p>Hello world!</p>".to_string());
+        server.send("<p>Goodbye world!</p>".to_string());
 
         let hello_message: Message = client.recv_message().unwrap();
         assert_eq!(

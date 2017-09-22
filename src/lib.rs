@@ -31,7 +31,6 @@
 
 #![recursion_limit = "1024"]
 
-extern crate chan;
 extern crate handlebars_iron;
 extern crate iron;
 extern crate mount;
@@ -41,6 +40,9 @@ extern crate shlex;
 extern crate staticfile;
 extern crate url;
 extern crate websocket as websockets;
+
+#[macro_use]
+extern crate chan;
 
 #[macro_use]
 extern crate error_chain;
@@ -243,8 +245,10 @@ impl Listening {
 
     /// Publish new markdown to be rendered by the server.
     pub fn send(&self, markdown: &str) -> Result<()> {
-        let html_sender = self.websocket_listening.html_sender();
-        html_sender.send(markdown_to_html(&markdown, &self.external_renderer)?);
+        self.websocket_listening.send(markdown_to_html(
+            &markdown,
+            &self.external_renderer,
+        )?);
 
         Ok(())
     }

@@ -2,6 +2,10 @@ extern crate aurelius;
 extern crate websocket;
 extern crate url;
 
+use std::sync::mpsc::{self, TryRecvError};
+use std::thread;
+use std::time::Duration;
+
 use websocket::{ClientBuilder, Message};
 use url::Url;
 
@@ -24,4 +28,25 @@ fn simple() {
     let message: Message = client.recv_message().unwrap();
     let html: String = String::from_utf8(message.payload.to_vec()).unwrap();
     assert_eq!(html.trim(), String::from("<p>Hello, world!</p>"));
+}
+
+#[test]
+fn no_websockets() {
+    let listening = Server::new().start().unwrap();
+
+    // We want to test that there is not a timeout when we send a message to a server that has no
+    // websocket connections.. We do this by creating a channel to send data from the If the
+    // receiver hasn't received a value within a second, we fail the test.
+    let (sender, receiver) = mpsc::channel();
+
+    let _handle = thread::spawn(move || {
+        listening.send("This shouldn't hang!").unwrap();
+        sender.send(()).unwrap();
+    });
+
+    thread::sleep(Duration::from_millis(500));
+
+    if let Err(TryRecvError::Empty) = receiver.try_recv() {
+        panic!("test timed out");
+    }
 }
