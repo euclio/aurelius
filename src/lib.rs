@@ -165,9 +165,13 @@ impl Server {
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&self) -> Result<Listening> {
         debug!("starting websocket server");
-        let websocket_listening = websocket::Server::new()
-            .listen(("localhost", self.websocket_port))?;
-        debug!("websockets listening on {}", websocket_listening.local_addr()?);
+        let websocket_listening = websocket::Server::new().listen(
+            ("localhost", self.websocket_port),
+        )?;
+        debug!(
+            "websockets listening on {}",
+            websocket_listening.local_addr()?
+        );
 
         let initial_html = markdown_to_html(&self.initial_markdown, &self.external_renderer)?;
 
@@ -177,9 +181,10 @@ impl Server {
             self.working_directory.clone(),
             assigned_websocket_port,
             http::StyleConfig {
-                 css: self.css.clone(),
-                 highlight_theme: self.highlight_theme.clone(),
-            }).listen(("localhost", self.http_port), &initial_html)?;
+                css: self.css.clone(),
+                highlight_theme: self.highlight_theme.clone(),
+            },
+        ).listen(("localhost", self.http_port), &initial_html)?;
         debug!("http listening on {}", http_listening.local_addr()?);
 
         let listening = Listening {
@@ -230,7 +235,8 @@ impl Listening {
     /// Changes the "current working directory" of the HTTP server. The HTTP server will serve
     /// static file requests out of the new directory.
     pub fn change_working_directory<P>(&mut self, dir: P)
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         self.http_listening.change_working_directory(dir);
     }

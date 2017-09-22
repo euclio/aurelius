@@ -48,7 +48,9 @@ impl Server {
     /// `websocket_port`. If `initial_markdown` is present, it will be displayed on the first
     /// connection.
     pub fn listen<A>(self, address: A, initial_html: &str) -> io::Result<Listening>
-            where A: ToSocketAddrs {
+    where
+        A: ToSocketAddrs,
+    {
         let working_directory = Arc::new(Mutex::new(self.working_directory));
 
         let handler = create_handler(MarkdownPreview {
@@ -63,9 +65,9 @@ impl Server {
 
         let listening = Listening {
             working_directory: working_directory,
-            listening: Iron::new(handler)
-                .http(address)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
+            listening: Iron::new(handler).http(address).map_err(|e| {
+                io::Error::new(io::ErrorKind::Other, e)
+            })?,
         };
 
         Ok(listening)
@@ -82,7 +84,10 @@ impl Listening {
         Ok(self.listening.socket)
     }
 
-    pub fn change_working_directory<P>(&mut self, dir: P) where P: AsRef<Path> {
+    pub fn change_working_directory<P>(&mut self, dir: P)
+    where
+        P: AsRef<Path>,
+    {
         let mut working_directory = self.working_directory.lock().unwrap();
         *working_directory = dir.as_ref().to_owned();
     }
@@ -100,8 +105,10 @@ fn create_handler(previewer: MarkdownPreview) -> Box<Handler> {
     let mut chain = Chain::new(previewer);
 
     let mut hbse = HandlebarsEngine::new();
-    hbse.add(Box::new(DirectorySource::new(CRATE_ROOT.join("templates/").to_str().unwrap(),
-                                           ".html")));
+    hbse.add(Box::new(DirectorySource::new(
+        CRATE_ROOT.join("templates/").to_str().unwrap(),
+        ".html",
+    )));
     if let Err(r) = hbse.reload() {
         panic!("{}", r);
     }
@@ -125,7 +132,10 @@ impl Handler for MarkdownPreview {
         let url_path = req.url.path().join(&MAIN_SEPARATOR.to_string());
 
         if url_path.is_empty() {
-            Ok(Response::with((Template::new("markdown_view", &self.template_data), status::Ok)))
+            Ok(Response::with((
+                Template::new("markdown_view", &self.template_data),
+                status::Ok,
+            )))
         } else {
             let local_cwd = self.working_directory.clone();
             let path = local_cwd.lock().unwrap().join(&url_path);
@@ -134,7 +144,7 @@ impl Handler for MarkdownPreview {
                 Ok(ref attr) if attr.is_file() => return Ok(Response::with((path, status::Ok))),
                 Err(ref e) if e.kind() != io::ErrorKind::NotFound => {
                     debug!("Error getting metadata for file: '{:?}': {:?}", path, e);
-                },
+                }
                 _ => (),
             }
 
@@ -170,16 +180,18 @@ mod tests {
         let response = request::get("http://localhost:3000/", Headers::new(), &handler).unwrap();
         assert!(response.status.unwrap().is_success(), "could not load index");
 
-        let response = request::get("http://localhost:3000/_static/js/markdown_client.js",
-                                    Headers::new(),
-                                    &handler)
-                .unwrap();
+        let response = request::get(
+            "http://localhost:3000/_static/js/markdown_client.js",
+            Headers::new(),
+            &handler,
+        ).unwrap();
         assert!(response.status.unwrap().is_success(), "static file not found");
 
-        let response = request::get("http://localhost:3000/non-existent",
-                                    Headers::new(),
-                                    &handler)
-                .unwrap();
+        let response = request::get(
+            "http://localhost:3000/non-existent",
+            Headers::new(),
+            &handler,
+        ).unwrap();
         assert!(response.status.unwrap().is_client_error(), "found non-existent file");
     }
 }

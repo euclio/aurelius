@@ -14,7 +14,10 @@ fn simple() {
     let websocket_port = listening.websocket_addr().unwrap().port();
 
     let url = Url::parse(&format!("ws://localhost:{}", websocket_port)).unwrap();
-    let mut client = ClientBuilder::new(url.as_str()).unwrap().connect_insecure().unwrap();
+    let mut client = ClientBuilder::new(url.as_str())
+        .unwrap()
+        .connect_insecure()
+        .unwrap();
 
     listening.send("Hello, world!").unwrap();
 

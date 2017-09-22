@@ -39,7 +39,9 @@ pub fn open(url: &str) -> Result<Child> {
 /// The browser will be called with any supplied arguments in addition to the URL as an additional
 /// argument.
 pub fn open_specific(url: &str, mut browser: Command) -> Result<Child> {
-    let url = Url::parse(url).chain_err(|| "error parsing URL for the browser")?;
+    let url = Url::parse(url).chain_err(
+        || "error parsing URL for the browser",
+    )?;
     debug!("starting process '{:?}' with url {}", browser, url);
 
     let child = browser
