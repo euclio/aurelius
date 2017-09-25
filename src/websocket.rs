@@ -5,7 +5,8 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::thread;
 
 use chan;
-use websockets::{Message, Server as WebSocketServer};
+use websockets::OwnedMessage;
+use websockets::sync::Server as WebSocketServer;
 
 /// The WebSocket server.
 ///
@@ -56,7 +57,7 @@ impl Server {
                 let mut client = connection.accept().unwrap();
 
                 for html in &receiver {
-                    client.send_message(&Message::text(html)).unwrap();
+                    client.send_message(&OwnedMessage::Text(html)).unwrap();
                 }
             });
         });
@@ -72,8 +73,9 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
-    use websockets::{ClientBuilder, Message};
+    use websockets::ClientBuilder;
     use websockets::client::Url;
+    use websockets::ws::dataframe::DataFrame;
 
     #[test]
     fn initial_send() {
@@ -89,9 +91,9 @@ mod tests {
 
         server.send("<p>Hello world!</p>".to_string());
 
-        let message: Message = client.recv_message().unwrap();
+        let message = client.recv_message().unwrap();
         assert_eq!(
-            String::from_utf8(message.payload.to_vec()).unwrap(),
+            String::from_utf8(message.take_payload()).unwrap(),
             "<p>Hello world!</p>"
         );
     }
@@ -110,15 +112,15 @@ mod tests {
         server.send("<p>Hello world!</p>".to_string());
         server.send("<p>Goodbye world!</p>".to_string());
 
-        let hello_message: Message = client.recv_message().unwrap();
+        let hello_message = client.recv_message().unwrap();
         assert_eq!(
-            String::from_utf8(hello_message.payload.to_vec()).unwrap(),
+            String::from_utf8(hello_message.take_payload()).unwrap(),
             "<p>Hello world!</p>"
         );
 
-        let goodbye_message: Message = client.recv_message().unwrap();
+        let goodbye_message = client.recv_message().unwrap();
         assert_eq!(
-            String::from_utf8(goodbye_message.payload.to_vec()).unwrap(),
+            String::from_utf8(goodbye_message.take_payload()).unwrap(),
             "<p>Goodbye world!</p>"
         );
     }

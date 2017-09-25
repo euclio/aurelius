@@ -6,8 +6,9 @@ use std::sync::mpsc::{self, TryRecvError};
 use std::thread;
 use std::time::Duration;
 
-use websocket::{ClientBuilder, Message};
 use url::Url;
+use websocket::ClientBuilder;
+use websocket::ws::dataframe::DataFrame;
 
 use aurelius::Server;
 
@@ -25,8 +26,8 @@ fn simple() {
 
     listening.send("Hello, world!").unwrap();
 
-    let message: Message = client.recv_message().unwrap();
-    let html: String = String::from_utf8(message.payload.to_vec()).unwrap();
+    let message = client.recv_message().unwrap();
+    let html = String::from_utf8(message.take_payload()).unwrap();
     assert_eq!(html.trim(), String::from("<p>Hello, world!</p>"));
 }
 
