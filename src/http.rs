@@ -194,4 +194,24 @@ mod tests {
         ).unwrap();
         assert!(response.status.unwrap().is_client_error(), "found non-existent file");
     }
+
+    #[test]
+    fn vendored() {
+        let handler = super::create_handler(MarkdownPreview {
+            template_data: json!({
+                "websocket_port": 1337,
+                "initial_markdown": "",
+                "highlight_theme": ::DEFAULT_HIGHLIGHT_THEME,
+                "custom_css": ::DEFAULT_CSS,
+            }),
+            working_directory: Arc::new(Mutex::new(PathBuf::new())),
+        });
+
+        let response = request::get(
+            "http://localhost:3000/_static/vendor/highlight.js/highlight.pack.js",
+            Headers::new(),
+            &handler,
+        ).unwrap();
+        assert!(response.status.unwrap().is_success(), "vendored file not found");
+    }
 }
