@@ -3,8 +3,8 @@
 use std::io::prelude::*;
 use std::process::{Command, Stdio};
 
-use pulldown_cmark::{Parser, html};
-use pulldown_cmark::{OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+use pulldown_cmark::{html, Parser};
+use pulldown_cmark::{OPTION_ENABLE_FOOTNOTES, OPTION_ENABLE_TABLES};
 
 use errors::*;
 
@@ -51,7 +51,10 @@ pub fn to_html_cmark(markdown: &str) -> String {
 /// println!("{}", html);
 /// ```
 pub fn to_html_external(mut command: Command, markdown: &str) -> Result<String> {
-    let child = command.stdin(Stdio::piped()).stdout(Stdio::piped()).spawn()?;
+    let child = command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
 
     child.stdin.unwrap().write_all(markdown.as_bytes())?;
 

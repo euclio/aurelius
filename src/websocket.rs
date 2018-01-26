@@ -51,15 +51,17 @@ impl Server {
 
         let (html_sender, html_receiver) = chan::sync(3);
 
-        thread::spawn(move || for connection in server.filter_map(Result::ok) {
-            let receiver = html_receiver.clone();
-            thread::spawn(move || {
-                let mut client = connection.accept().unwrap();
+        thread::spawn(move || {
+            for connection in server.filter_map(Result::ok) {
+                let receiver = html_receiver.clone();
+                thread::spawn(move || {
+                    let mut client = connection.accept().unwrap();
 
-                for html in &receiver {
-                    client.send_message(&OwnedMessage::Text(html)).unwrap();
-                }
-            });
+                    for html in &receiver {
+                        client.send_message(&OwnedMessage::Text(html)).unwrap();
+                    }
+                });
+            }
         });
 
         let listening = Listening {

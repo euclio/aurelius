@@ -6,9 +6,9 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use std::sync::{Arc, Mutex};
 
-use handlebars_iron::{Template, HandlebarsEngine, DirectorySource};
+use handlebars_iron::{DirectorySource, HandlebarsEngine, Template};
 use iron::prelude::*;
-use iron::{self, Handler, status};
+use iron::{self, status, Handler};
 use mount::Mount;
 use serde_json::Value;
 use staticfile::Static;
@@ -65,9 +65,9 @@ impl Server {
 
         let listening = Listening {
             working_directory: working_directory,
-            listening: Iron::new(handler).http(address).map_err(|e| {
-                io::Error::new(io::ErrorKind::Other, e)
-            })?,
+            listening: Iron::new(handler)
+                .http(address)
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
         };
 
         Ok(listening)
@@ -179,21 +179,30 @@ mod tests {
         });
 
         let response = request::get("http://localhost:3000/", Headers::new(), &handler).unwrap();
-        assert!(response.status.unwrap().is_success(), "could not load index");
+        assert!(
+            response.status.unwrap().is_success(),
+            "could not load index"
+        );
 
         let response = request::get(
             "http://localhost:3000/_static/js/markdown_client.js",
             Headers::new(),
             &handler,
         ).unwrap();
-        assert!(response.status.unwrap().is_success(), "static file not found");
+        assert!(
+            response.status.unwrap().is_success(),
+            "static file not found"
+        );
 
         let response = request::get(
             "http://localhost:3000/non-existent",
             Headers::new(),
             &handler,
         ).unwrap();
-        assert!(response.status.unwrap().is_client_error(), "found non-existent file");
+        assert!(
+            response.status.unwrap().is_client_error(),
+            "found non-existent file"
+        );
     }
 
     #[test]
@@ -213,6 +222,9 @@ mod tests {
             Headers::new(),
             &handler,
         ).unwrap();
-        assert!(response.status.unwrap().is_success(), "vendored file not found");
+        assert!(
+            response.status.unwrap().is_success(),
+            "vendored file not found"
+        );
     }
 }

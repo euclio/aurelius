@@ -28,7 +28,6 @@
 //! [vim-markdown-composer]: https://github.com/euclio/vim-markdown-composer
 
 #![deny(missing_docs)]
-
 #![recursion_limit = "1024"]
 
 extern crate handlebars_iron;
