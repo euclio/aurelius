@@ -2,7 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <link href="{{{ custom_css }}}" rel="stylesheet">
+    {{#each custom_css }}
+    <link href="{{{ this }}}" rel="stylesheet">
+    {{/each}}
     <link href="/_static/vendor/highlight.js/styles/{{ highlight_theme }}.css" rel="stylesheet">
     <link href="/_static/css/styles.css" rel="stylesheet">
     <title>Markdown Composer</title>

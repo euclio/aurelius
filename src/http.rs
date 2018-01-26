@@ -29,7 +29,7 @@ pub struct Server {
 
 pub struct StyleConfig {
     pub highlight_theme: String,
-    pub css: String,
+    pub css: Vec<String>,
 }
 
 impl Server {
@@ -163,6 +163,7 @@ mod tests {
     use iron::Headers;
     use self::iron_test::request;
 
+    use config;
     use super::MarkdownPreview;
 
     #[test]
@@ -171,8 +172,8 @@ mod tests {
             template_data: json!({
                 "websocket_port": 1337,
                 "initial_markdown": "",
-                "highlight_theme": ::DEFAULT_HIGHLIGHT_THEME,
-                "custom_css": ::DEFAULT_CSS,
+                "highlight_theme": config::DEFAULT_HIGHLIGHT_THEME,
+                "custom_css": vec![config::DEFAULT_CSS],
             }),
             working_directory: Arc::new(Mutex::new(PathBuf::new())),
         });
@@ -201,8 +202,8 @@ mod tests {
             template_data: json!({
                 "websocket_port": 1337,
                 "initial_markdown": "",
-                "highlight_theme": ::DEFAULT_HIGHLIGHT_THEME,
-                "custom_css": ::DEFAULT_CSS,
+                "highlight_theme": config::DEFAULT_HIGHLIGHT_THEME,
+                "custom_css": vec![config::DEFAULT_CSS],
             }),
             working_directory: Arc::new(Mutex::new(PathBuf::new())),
         });

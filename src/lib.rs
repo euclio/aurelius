@@ -36,7 +36,6 @@ extern crate iron;
 extern crate mount;
 extern crate pulldown_cmark;
 extern crate serde;
-extern crate shlex;
 extern crate staticfile;
 extern crate url;
 extern crate websocket as websockets;
@@ -60,21 +59,19 @@ pub mod browser;
 pub mod errors;
 pub mod markdown;
 
+mod config;
 mod http;
 mod websocket;
 
-use std::env;
 use std::io;
 use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
-use shlex::Shlex;
-
+use config::ExternalRenderer;
 use errors::*;
 
-const DEFAULT_HIGHLIGHT_THEME: &'static str = "github";
-const DEFAULT_CSS: &'static str = "/_static/vendor/github-markdown-css/github-markdown.css";
+pub use config::Config;
 
 /// An instance of the a markdown preview server.
 ///
@@ -83,22 +80,19 @@ const DEFAULT_CSS: &'static str = "/_static/vendor/github-markdown-css/github-ma
 /// # Examples
 ///
 /// ```no_run
-/// use aurelius::Server;
+/// use aurelius::{Config, Server};
 ///
-/// let listening = Server::new()
-///     .initial_markdown("<h1>Hello, world</h1>")
+/// let listening = Server::new_with_config(
+///     Config {
+///         initial_markdown: Some(String::from("# Hello, world!")),
+///         ..Default::default()
+///     })
 ///     .start()
 ///     .unwrap();
 /// ```
 #[derive(Debug, Clone)]
 pub struct Server {
-    initial_markdown: String,
-    working_directory: PathBuf,
-    highlight_theme: String,
-    css: String,
-    websocket_port: u16,
-    http_port: u16,
-    external_renderer: Option<String>,
+    config: Config,
 }
 
 impl Server {
@@ -107,58 +101,9 @@ impl Server {
         Self::default()
     }
 
-    /// Set the initial markdown to render when starting the server.
-    pub fn initial_markdown<S: Into<String>>(&mut self, markdown: S) -> &Self {
-        self.initial_markdown = markdown.into();
-        self
-    }
-
-    /// Set the directory that static files should be served out of.
-    ///
-    /// Defaults to the process' current working directory.
-    pub fn working_directory<D: Into<PathBuf>>(&mut self, directory: D) -> &Self {
-        self.working_directory = directory.into();
-        self
-    }
-
-    /// Set the syntax highlighting theme to use.
-    ///
-    /// Defaults to the "github" theme.
-    pub fn highlight_theme<T: Into<String>>(&mut self, theme: T) -> &Self {
-        self.highlight_theme = theme.into();
-        self
-    }
-
-    /// Set the CSS that should be used to style the markdown.
-    ///
-    /// Defaults to github's CSS styles.
-    pub fn css<C: Into<String>>(&mut self, css: C) -> &Self {
-        self.css = css.into();
-        self
-    }
-
-    /// Set the port to listen for websocket connections on.
-    ///
-    /// Defaults to an arbitrary port assigned by the OS.
-    pub fn websocket_port(&mut self, port: u16) -> &Self {
-        self.websocket_port = port;
-        self
-    }
-
-    /// Set the port to listen for HTTP connections on.
-    ///
-    /// Defaults to an arbitrary port assigned by the OS.
-    pub fn http_port(&mut self, port: u16) -> &Self {
-        self.http_port = port;
-        self
-    }
-
-    /// Set an external command to use instead of the in-memory markdown renderer.
-    ///
-    /// The command should read markdown from stdin, and output markdown on stdout.
-    pub fn external_renderer<C: Into<String>>(&mut self, command: C) -> &Self {
-        self.external_renderer = Some(command.into());
-        self
+    /// Create a new markdown preview server with the given configuration.
+    pub fn new_with_config(config: Config) -> Self {
+        Server { config }
     }
 
     /// Starts the server.
@@ -167,32 +112,37 @@ impl Server {
     /// sent as HTML to all clients of the websocket server.
     pub fn start(&self) -> Result<Listening> {
         debug!("starting websocket server");
-        let websocket_listening = websocket::Server::new().listen(
-            ("localhost", self.websocket_port),
-        )?;
+        let websocket_listening =
+            websocket::Server::new().listen(("localhost", self.config.websocket_port))?;
         debug!(
             "websockets listening on {}",
             websocket_listening.local_addr()?
         );
 
-        let initial_html = markdown_to_html(&self.initial_markdown, &self.external_renderer)?;
+        let config = &self.config;
+
+        let initial_html = if let Some(ref initial_markdown) = config.initial_markdown.as_ref() {
+            markdown_to_html(initial_markdown, &config.external_renderer)?
+        } else {
+            String::new()
+        };
 
         debug!("starting http_server");
         let assigned_websocket_port = websocket_listening.local_addr()?.port();
         let http_listening = http::Server::new(
-            self.working_directory.clone(),
+            self.config.working_directory.clone(),
             assigned_websocket_port,
             http::StyleConfig {
-                css: self.css.clone(),
-                highlight_theme: self.highlight_theme.clone(),
+                css: config.custom_css.clone(),
+                highlight_theme: config.highlight_theme.clone(),
             },
-        ).listen(("localhost", self.http_port), &initial_html)?;
+        ).listen(("localhost", config.http_port), &initial_html)?;
         debug!("http listening on {}", http_listening.local_addr()?);
 
         let listening = Listening {
             http_listening: http_listening,
             websocket_listening: websocket_listening,
-            external_renderer: self.external_renderer.clone(),
+            external_renderer: config.external_renderer.clone(),
         };
 
         Ok(listening)
@@ -202,13 +152,7 @@ impl Server {
 impl Default for Server {
     fn default() -> Self {
         Server {
-            working_directory: env::current_dir().unwrap().to_owned(),
-            initial_markdown: String::default(),
-            highlight_theme: DEFAULT_HIGHLIGHT_THEME.to_string(),
-            css: DEFAULT_CSS.to_string(),
-            websocket_port: 0,
-            http_port: 0,
-            external_renderer: None,
+            config: Default::default(),
         }
     }
 }
@@ -220,7 +164,7 @@ impl Default for Server {
 pub struct Listening {
     http_listening: http::Listening,
     websocket_listening: websocket::Listening,
-    external_renderer: Option<String>,
+    external_renderer: Option<ExternalRenderer>,
 }
 
 impl Listening {
@@ -245,22 +189,16 @@ impl Listening {
 
     /// Publish new markdown to be rendered by the server.
     pub fn send(&self, markdown: &str) -> Result<()> {
-        self.websocket_listening.send(markdown_to_html(
-            &markdown,
-            &self.external_renderer,
-        )?);
-
+        let html = markdown_to_html(markdown, &self.external_renderer)?;
+        self.websocket_listening.send(html);
         Ok(())
     }
 }
 
-fn markdown_to_html(markdown: &str, external_command: &Option<String>) -> Result<String> {
-    let html = if let Some(ref command) = *external_command {
-        let mut shlex = Shlex::new(command);
-
-        let renderer = shlex.next().ok_or_else(|| "no external renderer specified")?;
-        let mut command = Command::new(renderer);
-        command.args(shlex);
+fn markdown_to_html(markdown: &str, external_command: &Option<ExternalRenderer>) -> Result<String> {
+    let html = if let Some(&(ref command, ref args)) = external_command.as_ref() {
+        let mut command = Command::new(command);
+        command.args(args);
         markdown::to_html_external(command, markdown)?
     } else {
         markdown::to_html_cmark(markdown)

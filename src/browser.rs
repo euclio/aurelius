@@ -1,6 +1,6 @@
 //! Functions for interacting with browser processes.
 
-use std::process::{Command, Child, Stdio};
+use std::process::{Child, Command, Stdio};
 
 use url::Url;
 
