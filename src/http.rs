@@ -10,7 +10,6 @@ use handlebars_iron::{DirectorySource, HandlebarsEngine, Template};
 use iron::prelude::*;
 use iron::{self, status, Handler};
 use mount::Mount;
-use serde_json::Value;
 use staticfile::Static;
 
 lazy_static! {
@@ -30,6 +29,15 @@ pub struct Server {
 pub struct StyleConfig {
     pub highlight_theme: String,
     pub css: Vec<String>,
+}
+
+/// Data that is passed to the HTML template when rendering.
+#[derive(Debug, Serialize)]
+struct TemplateData {
+    websocket_port: u16,
+    initial_html: String,
+    highlight_theme: String,
+    custom_css: Vec<String>,
 }
 
 impl Server {
@@ -54,12 +62,12 @@ impl Server {
         let working_directory = Arc::new(Mutex::new(self.working_directory));
 
         let handler = create_handler(MarkdownPreview {
-            template_data: json!({
-                "websocket_port": self.websocket_port,
-                "initial_html": initial_html,
-                "highlight_theme": self.styles.highlight_theme,
-                "custom_css": self.styles.css,
-            }),
+            template_data: TemplateData {
+                websocket_port: self.websocket_port,
+                initial_html: initial_html.to_owned(),
+                highlight_theme: self.styles.highlight_theme,
+                custom_css: self.styles.css,
+            },
             working_directory: working_directory.clone(),
         });
 
@@ -123,7 +131,7 @@ fn create_handler(previewer: MarkdownPreview) -> Box<Handler> {
 }
 
 struct MarkdownPreview {
-    template_data: Value,
+    template_data: TemplateData,
     working_directory: Arc<Mutex<PathBuf>>,
 }
 
@@ -164,17 +172,17 @@ mod tests {
     use self::iron_test::request;
 
     use config;
-    use super::MarkdownPreview;
+    use super::{MarkdownPreview, TemplateData};
 
     #[test]
     fn simple() {
         let handler = super::create_handler(MarkdownPreview {
-            template_data: json!({
-                "websocket_port": 1337,
-                "initial_markdown": "",
-                "highlight_theme": config::DEFAULT_HIGHLIGHT_THEME,
-                "custom_css": vec![config::DEFAULT_CSS],
-            }),
+            template_data: TemplateData {
+                websocket_port: 1337,
+                initial_html: String::new(),
+                highlight_theme: config::DEFAULT_HIGHLIGHT_THEME.to_string(),
+                custom_css: vec![config::DEFAULT_CSS.to_string()],
+            },
             working_directory: Arc::new(Mutex::new(PathBuf::new())),
         });
 
@@ -208,12 +216,12 @@ mod tests {
     #[test]
     fn vendored() {
         let handler = super::create_handler(MarkdownPreview {
-            template_data: json!({
-                "websocket_port": 1337,
-                "initial_markdown": "",
-                "highlight_theme": config::DEFAULT_HIGHLIGHT_THEME,
-                "custom_css": vec![config::DEFAULT_CSS],
-            }),
+            template_data: TemplateData {
+                websocket_port: 1337,
+                initial_html: String::new(),
+                highlight_theme: config::DEFAULT_HIGHLIGHT_THEME.to_string(),
+                custom_css: vec![config::DEFAULT_CSS.to_string()],
+            },
             working_directory: Arc::new(Mutex::new(PathBuf::new())),
         });
 

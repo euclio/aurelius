@@ -52,7 +52,7 @@ extern crate lazy_static;
 extern crate log;
 
 #[macro_use]
-extern crate serde_json;
+extern crate serde_derive;
 
 pub mod browser;
 pub mod errors;
