@@ -1,6 +1,6 @@
 [package]
 name = "aurelius"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Andy Russell <arussell123@gmail.com>"]
 documentation = "https://euclio.github.io/aurelius"
 homepage = "https://github.com/euclio/aurelius"
