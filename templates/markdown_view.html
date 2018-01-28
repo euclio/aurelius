@@ -2,8 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8">
-    {{#each custom_css }}
+    {{#each remote_custom_css }}
     <link href="{{{ this }}}" rel="stylesheet">
+    {{/each}}
+    {{#each local_custom_css }}
+    <style>{{{ this }}}</style>
     {{/each}}
     <link href="/_static/vendor/highlight.js/styles/{{ highlight_theme }}.css" rel="stylesheet">
     <link href="/_static/css/styles.css" rel="stylesheet">

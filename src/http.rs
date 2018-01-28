@@ -1,6 +1,7 @@
 //! Contains the HTTP server component.
 
-use std::fs;
+use std::fs::{self, File};
+use std::io::prelude::*;
 use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
@@ -37,7 +38,12 @@ struct TemplateData {
     websocket_port: u16,
     initial_html: String,
     highlight_theme: String,
-    custom_css: Vec<String>,
+
+    /// URLs pointing to remote CSS resources.
+    remote_custom_css: Vec<String>,
+
+    /// Full text of local CSS resources.
+    local_custom_css: Vec<String>,
 }
 
 impl Server {
@@ -61,12 +67,29 @@ impl Server {
     {
         let working_directory = Arc::new(Mutex::new(self.working_directory));
 
+        // This is a bit of a hack, should probably use real URLs here.
+        let (remote_custom_css, local_custom_css): (Vec<String>, Vec<String>) = self.styles
+            .css
+            .into_iter()
+            .partition(|css| !css.starts_with("file://"));
+
+        let local_custom_css = local_custom_css
+            .into_iter()
+            .flat_map(|file_uri| File::open(file_uri.trim_left_matches("file://")).ok())
+            .map(|mut file| {
+                let mut css = String::new();
+                file.read_to_string(&mut css).unwrap();
+                css
+            })
+            .collect();
+
         let handler = create_handler(MarkdownPreview {
             template_data: TemplateData {
                 websocket_port: self.websocket_port,
                 initial_html: initial_html.to_owned(),
                 highlight_theme: self.styles.highlight_theme,
-                custom_css: self.styles.css,
+                remote_custom_css,
+                local_custom_css,
             },
             working_directory: working_directory.clone(),
         });
@@ -181,7 +204,8 @@ mod tests {
                 websocket_port: 1337,
                 initial_html: String::new(),
                 highlight_theme: config::DEFAULT_HIGHLIGHT_THEME.to_string(),
-                custom_css: vec![config::DEFAULT_CSS.to_string()],
+                remote_custom_css: vec![config::DEFAULT_CSS.to_string()],
+                local_custom_css: vec![],
             },
             working_directory: Arc::new(Mutex::new(PathBuf::new())),
         });
@@ -220,7 +244,8 @@ mod tests {
                 websocket_port: 1337,
                 initial_html: String::new(),
                 highlight_theme: config::DEFAULT_HIGHLIGHT_THEME.to_string(),
-                custom_css: vec![config::DEFAULT_CSS.to_string()],
+                remote_custom_css: vec![config::DEFAULT_CSS.to_string()],
+                local_custom_css: vec![],
             },
             working_directory: Arc::new(Mutex::new(PathBuf::new())),
         });
