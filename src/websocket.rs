@@ -15,6 +15,7 @@ pub struct Server {
     _private: (),
 }
 
+#[derive(Debug)]
 pub struct Listening {
     addr: SocketAddr,
     html_sender: chan::Sender<String>,

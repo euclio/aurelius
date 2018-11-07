@@ -105,6 +105,7 @@ impl Server {
     }
 }
 
+#[derive(Debug)]
 pub struct Listening {
     listening: iron::Listening,
     working_directory: Arc<Mutex<PathBuf>>,

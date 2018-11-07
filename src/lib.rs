@@ -27,6 +27,7 @@
 //!
 //! [vim-markdown-composer]: https://github.com/euclio/vim-markdown-composer
 
+#![deny(missing_debug_implementations)]
 #![deny(missing_docs)]
 #![recursion_limit = "1024"]
 
@@ -160,6 +161,7 @@ impl Default for Server {
 ///
 /// The server is listening for HTTP requests on a given port, and broadcasting rendered markdown
 /// over a websocket connection on another port.
+#[derive(Debug)]
 pub struct Listening {
     http_listening: http::Listening,
     websocket_listening: websocket::Listening,
