@@ -17,11 +17,11 @@ fn change_working_directory() {
     resource_url.set_path("/file");
 
     let response = reqwest::get(resource_url.clone()).unwrap();
-    assert_eq!(response.status(), StatusCode::NotFound);
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
     // Change to a directory where the file exists
     listening.change_working_directory("tests/assets");
 
     let response = reqwest::get(resource_url).unwrap();
-    assert_eq!(response.status(), StatusCode::Ok);
+    assert_eq!(response.status(), StatusCode::OK);
 }
