@@ -41,7 +41,7 @@ extern crate url;
 extern crate websocket as websockets;
 
 #[macro_use]
-extern crate chan;
+extern crate crossbeam_channel;
 
 #[macro_use]
 extern crate error_chain;

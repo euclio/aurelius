@@ -11,7 +11,7 @@ repository = "https://github.com/euclio/aurelius"
 description = "A complete solution for previewing markdown."
 
 [dependencies]
-chan = "0.1.14"
+crossbeam-channel = "0.3"
 error-chain = "0.12"
 handlebars-iron = "0.26"
 iron = "0.6"
