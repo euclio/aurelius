@@ -4,7 +4,7 @@ use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::thread;
 
-use chan;
+use crossbeam_channel;
 use websockets::OwnedMessage;
 use websockets::sync::Server as WebSocketServer;
 
@@ -18,7 +18,7 @@ pub struct Server {
 #[derive(Debug)]
 pub struct Listening {
     addr: SocketAddr,
-    html_sender: chan::Sender<String>,
+    html_sender: crossbeam_channel::Sender<String>,
 }
 
 impl Listening {
@@ -29,9 +29,9 @@ impl Listening {
     pub fn send(&self, html: String) {
         let sender = &self.html_sender;
 
-        chan_select! {
+        select! {
             default => (),
-            sender.send(html) => (),
+            send(sender, html) -> _res => (),
         }
     }
 }
@@ -50,7 +50,7 @@ impl Server {
         let server = WebSocketServer::bind(addr)?;
         let addr = server.local_addr()?;
 
-        let (html_sender, html_receiver) = chan::sync(3);
+        let (html_sender, html_receiver) = crossbeam_channel::bounded(3);
 
         thread::spawn(move || {
             for connection in server.filter_map(Result::ok) {

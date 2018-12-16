@@ -11,20 +11,20 @@ repository = "https://github.com/euclio/aurelius"
 description = "A complete solution for previewing markdown."
 
 [dependencies]
-chan = "0.1.14"
+crossbeam-channel = "0.3"
 error-chain = "0.12"
-handlebars-iron = "0.26"
+handlebars-iron = "0.27"
 iron = "0.6"
 lazy_static = "1"
 log = "0.4"
 mount = "0.4"
-pulldown-cmark = { version = "0.1", default-features = false }
+pulldown-cmark = { version = "0.2", default-features = false }
 serde = "1"
 serde_derive = "1"
 staticfile = "0.5"
 url = "1.1.0"
-websocket = { version = "0.20", default-features = false, features = ["sync"] }
+websocket = { version = "0.21", default-features = false, features = ["sync"] }
 
 [dev-dependencies]
-reqwest = "0.8"
+reqwest = "0.9"
 iron-test = "0.6"
