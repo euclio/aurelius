@@ -23,7 +23,7 @@ serde = "1"
 serde_derive = "1"
 staticfile = "0.5"
 url = "1.1.0"
-websocket = { version = "0.21", default-features = false, features = ["sync"] }
+websocket = { version = "0.22", default-features = false, features = ["sync"] }
 
 [dev-dependencies]
 reqwest = "0.9"
