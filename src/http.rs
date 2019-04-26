@@ -75,7 +75,7 @@ impl Server {
 
         let local_custom_css = local_custom_css
             .into_iter()
-            .flat_map(|file_uri| File::open(file_uri.trim_left_matches("file://")).ok())
+            .flat_map(|file_uri| File::open(file_uri.trim_start_matches("file://")).ok())
             .map(|mut file| {
                 let mut css = String::new();
                 file.read_to_string(&mut css).unwrap();

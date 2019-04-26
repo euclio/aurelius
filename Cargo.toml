@@ -18,12 +18,12 @@ iron = "0.6"
 lazy_static = "1"
 log = "0.4"
 mount = "0.4"
-pulldown-cmark = { version = "0.2", default-features = false }
+pulldown-cmark = { version = "0.5", default-features = false }
 serde = "1"
 serde_derive = "1"
 staticfile = "0.5"
 url = "1.1.0"
-websocket = { version = "0.21", default-features = false, features = ["sync"] }
+websocket = { version = "0.22", default-features = false, features = ["sync"] }
 
 [dev-dependencies]
 reqwest = "0.9"
