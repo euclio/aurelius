@@ -1,6 +1,3 @@
-extern crate aurelius;
-extern crate reqwest;
-
 use std::io::prelude::*;
 
 use aurelius::{Config, Server};

@@ -1,7 +1,3 @@
-extern crate aurelius;
-extern crate reqwest;
-extern crate url;
-
 use url::Url;
 use reqwest::StatusCode;
 

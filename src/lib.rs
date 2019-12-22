@@ -29,31 +29,6 @@
 
 #![deny(missing_debug_implementations)]
 #![deny(missing_docs)]
-#![recursion_limit = "1024"]
-
-extern crate handlebars_iron;
-extern crate iron;
-extern crate mount;
-extern crate pulldown_cmark;
-extern crate serde;
-extern crate staticfile;
-extern crate url;
-extern crate websocket as websockets;
-
-#[macro_use]
-extern crate crossbeam_channel;
-
-#[macro_use]
-extern crate error_chain;
-
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate log;
-
-#[macro_use]
-extern crate serde_derive;
 
 pub mod browser;
 pub mod errors;
@@ -68,10 +43,12 @@ use std::net::SocketAddr;
 use std::path::Path;
 use std::process::Command;
 
-use config::ExternalRenderer;
-use errors::*;
+use log::*;
 
-pub use config::Config;
+use crate::config::ExternalRenderer;
+use crate::errors::*;
+
+pub use crate::config::Config;
 
 /// An instance of the a markdown preview server.
 ///

@@ -1,7 +1,3 @@
-extern crate aurelius;
-extern crate url;
-extern crate websocket;
-
 use std::sync::mpsc::{self, TryRecvError};
 use std::thread;
 use std::time::Duration;

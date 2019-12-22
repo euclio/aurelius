@@ -1,5 +1,3 @@
-extern crate aurelius;
-
 use aurelius::{browser, Config, Server};
 
 fn main() {
