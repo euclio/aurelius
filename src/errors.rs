@@ -2,6 +2,7 @@
 
 use std::io;
 
+use error_chain::error_chain;
 use url;
 
 error_chain! {

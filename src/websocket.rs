@@ -4,9 +4,9 @@ use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::thread;
 
-use crossbeam_channel;
-use websockets::OwnedMessage;
-use websockets::sync::Server as WebSocketServer;
+use crossbeam_channel::{self, select};
+use websocket::OwnedMessage;
+use websocket::sync::Server as WebSocketServer;
 
 /// The WebSocket server.
 ///
@@ -76,9 +76,9 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
-    use websockets::ClientBuilder;
-    use websockets::client::Url;
-    use websockets::ws::dataframe::DataFrame;
+    use websocket::ClientBuilder;
+    use websocket::client::Url;
+    use websocket::ws::dataframe::DataFrame;
 
     #[test]
     fn initial_send() {

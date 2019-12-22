@@ -2,9 +2,11 @@
 
 use std::process::{Child, Command, Stdio};
 
+use error_chain::bail;
+use log::*;
 use url::Url;
 
-use errors::*;
+use crate::errors::*;
 
 /// Opens a browser window at the specified URL in a new process.
 ///

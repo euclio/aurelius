@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 
 use pulldown_cmark::{html, Options, Parser};
 
-use errors::*;
+use crate::errors::*;
 
 /// Renders a markdown string to an HTML string using an in-process CommonMark renderer.
 ///

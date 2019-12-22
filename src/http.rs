@@ -10,7 +10,10 @@ use std::sync::{Arc, Mutex};
 use handlebars_iron::{DirectorySource, HandlebarsEngine, Template};
 use iron::prelude::*;
 use iron::{self, status, Handler};
+use lazy_static::lazy_static;
+use log::*;
 use mount::Mount;
+use serde::Serialize;
 use staticfile::Static;
 
 lazy_static! {
@@ -133,7 +136,7 @@ impl Drop for Listening {
 
 /// Wraps the markdown handler with other middleware, such as template rendering and static file
 /// serving.
-fn create_handler(previewer: MarkdownPreview) -> Box<Handler> {
+fn create_handler(previewer: MarkdownPreview) -> Box<dyn Handler> {
     let mut chain = Chain::new(previewer);
 
     let mut hbse = HandlebarsEngine::new();
@@ -160,7 +163,7 @@ struct MarkdownPreview {
 }
 
 impl Handler for MarkdownPreview {
-    fn handle(&self, req: &mut Request) -> IronResult<Response> {
+    fn handle(&self, req: &mut Request<'_, '_>) -> IronResult<Response> {
         let url_path = req.url.path().join(&MAIN_SEPARATOR.to_string());
 
         if url_path.is_empty() {
@@ -187,7 +190,7 @@ impl Handler for MarkdownPreview {
 
 #[cfg(test)]
 mod tests {
-    extern crate iron_test;
+    use iron_test;
 
     use std::path::PathBuf;
     use std::sync::{Arc, Mutex};
@@ -195,7 +198,7 @@ mod tests {
     use iron::Headers;
     use self::iron_test::request;
 
-    use config;
+    use crate::config;
     use super::{MarkdownPreview, TemplateData};
 
     #[test]
