@@ -36,8 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
     syntaxHighlight();
     renderMath();
     var previewWindow = document.getElementById('markdown-preview');
-    var webSocketUrl = ('ws://localhost:' +
-                        previewWindow.getAttribute('data-websocket-port'));
+    var webSocketUrl = 'ws://' + window.location.host;
 
     var socket = new ReconnectingWebSocket(webSocketUrl);
     socket.maxReconnectInterval = 5000;

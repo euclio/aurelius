@@ -8,19 +8,17 @@
     {{#each local_custom_css }}
     <style>{{{ this }}}</style>
     {{/each}}
-    <link href="/_static/vendor/highlight.js/styles/{{ highlight_theme }}.css" rel="stylesheet">
-    <link href="/_static/css/styles.css" rel="stylesheet">
+    <link href="/__/vendor/highlight.js/styles/{{ highlight_theme }}.css" rel="stylesheet">
+    <link href="/__/css/styles.css" rel="stylesheet">
     <title>Markdown Composer</title>
   </head>
   <body>
-    <article class="markdown-body" id="markdown-preview" data-websocket-port="{{ websocket_port }}">
-      {{{ initial_html }}}
-    </article>
-    <script src="/_static/vendor/reconnecting-websocket/reconnecting-websocket.min.js"></script>
-    <script src="/_static/vendor/highlight.js/highlight.pack.js"></script>
+    <article class="markdown-body" id="markdown-preview"></article>
+    <script src="/__/vendor/reconnecting-websocket/reconnecting-websocket.min.js"></script>
+    <script src="/__/vendor/highlight.js/highlight.pack.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js"></script>
-    <script src="/_static/js/markdown_client.js"></script>
+    <script src="/__/js/markdown_client.js"></script>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
   </body>
 </html>
