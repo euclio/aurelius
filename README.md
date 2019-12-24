@@ -1,26 +1,21 @@
 # aurelius
 
 [aurelius](https://github.com/euclio/aurelius) is a complete solution for
-rendering and previewing markdown.
+live-previewing markdown as HTML.
 
 ![](https://github.com/euclio/aurelius/workflows/Continuous%20integration/badge.svg)
 [![crates.io](http://meritbadge.herokuapp.com/aurelius)](https://crates.io/crates/aurelius)
 
-This crate provides a server that can render and update an HTML preview of
-Markdown without a client-side refresh. The server listens for both WebSocket
-and HTTP connections on arbitrary ports. Upon receiving an HTTP request, the
-server renders a page containing a Markdown preview. Client-side JavaScript then
-initiates a WebSocket connection which allows the server to push changes to the
-client.
+This crate provides a server that can render and update an HTML preview of markdown without a
+client-side refresh. Upon receiving an HTTP request, the server responds with an HTML page
+containing a rendering of supplied markdown. Client-side JavaScript then initiates a WebSocket
+connection which allows the server to push changes to the client.
 
 Full documentation may be found [here][docs].
 
-This crate was designed to power [vim-markdown-composer], a Markdown preview
-plugin for [Neovim](http://neovim.io) and [Vim 8](http://www.vim.org/), but it may be used to implement similar
-plugins for any editor. See [vim-markdown-composer] for a usage example.
-
-aurelius follows stable Rust. However, the API currently unstable and may change
-without warning.
+This crate was designed to power [vim-markdown-composer], a markdown preview plugin for
+[Neovim](http://neovim.io), but it may be used to implement similar plugins for any editor.
+See [vim-markdown-composer] for a real-world usage example.
 
 ## Acknowledgments
 
