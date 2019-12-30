@@ -3,7 +3,7 @@
 [aurelius](https://github.com/euclio/aurelius) is a complete solution for
 rendering and previewing markdown.
 
-[![Build Status](https://travis-ci.org/euclio/aurelius.svg)](https://travis-ci.org/euclio/aurelius)
+![](https://github.com/euclio/aurelius/workflows/Continuous%20integration/badge.svg)
 [![crates.io](http://meritbadge.herokuapp.com/aurelius)](https://crates.io/crates/aurelius)
 
 This crate provides a server that can render and update an HTML preview of
