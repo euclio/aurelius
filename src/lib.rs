@@ -197,7 +197,10 @@ impl Server {
             let mut html = String::with_capacity(markdown.len());
             let parser = Parser::new_ext(
                 &markdown,
-                Options::ENABLE_FOOTNOTES | Options::ENABLE_TABLES,
+                Options::ENABLE_FOOTNOTES
+                    | Options::ENABLE_TABLES
+                    | Options::ENABLE_STRIKETHROUGH
+                    | Options::ENABLE_TASKLISTS,
             );
 
             pulldown_cmark::html::push_html(&mut html, parser);
