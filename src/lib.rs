@@ -310,7 +310,7 @@ impl Server {
     /// | OS X     | `open -g`  |
     /// | Windows  | `explorer` |
     pub fn open_browser(&self) -> io::Result<()> {
-        let mut command = if cfg!(target_os = "macos") {
+        let command = if cfg!(target_os = "macos") {
             let mut command = Command::new("open");
             command.arg("-g");
             command
@@ -320,10 +320,14 @@ impl Server {
             Command::new("xdg-open")
         };
 
+        self.open_specific_browser(command)
+    }
+
+    /// Opens a browser with a specified command. The HTTP address of the server will be appended
+    /// to the command as an argument.
+    pub fn open_specific_browser(&self, mut command: Command) -> io::Result<()> {
         command.arg(&format!("http://{}", self.addr()));
-
         command.spawn()?;
-
         Ok(())
     }
 }
