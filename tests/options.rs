@@ -16,6 +16,7 @@ fn custom_css_url() -> Result<(), Box<dyn Error>> {
 
     let text = reqwest::blocking::get(&format!("http://{}", server.addr()))?.text()?;
     assert!(text.contains(&CSS_URL));
+    assert!(!text.contains("github-markdown.css"));
 
     Ok(())
 }
@@ -31,6 +32,7 @@ fn custom_css_file() -> Result<(), Box<dyn Error>> {
 
     let text = reqwest::blocking::get(&format!("http://{}", server.addr()))?.text()?;
     assert!(text.contains("<style>a { color: #FF0000; }</style>"));
+    assert!(!text.contains("github-markdown.css"));
 
     Ok(())
 }
@@ -49,6 +51,17 @@ fn custom_css_file_uri() -> Result<(), Box<dyn Error>> {
 
     let text = reqwest::blocking::get(&format!("http://{}", server.addr()))?.text()?;
     assert!(text.contains("<style>a { color: #FF0000; }</style>"));
+    assert!(!text.contains("github-markdown.css"));
+
+    Ok(())
+}
+
+#[test]
+fn custom_css_default() -> Result<(), Box<dyn Error>> {
+    let server = Server::bind("localhost:0")?;
+
+    let text = reqwest::blocking::get(&format!("http://{}", server.addr()))?.text()?;
+    assert!(text.contains("github-markdown.css"));
 
     Ok(())
 }
