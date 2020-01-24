@@ -96,7 +96,7 @@ fn external_renderer() -> Result<(), Box<dyn Error>> {
 
     let (mut websocket, _) = tungstenite::connect(req)?;
 
-    server.send(String::from("Hello, world!"))?;
+    server.send("Hello, world!")?;
 
     let message = websocket.read_message()?;
     assert_eq!(message.to_text()?.trim(), "Hello, world!");

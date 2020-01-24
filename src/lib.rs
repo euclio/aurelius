@@ -20,7 +20,7 @@
 //!
 //! server.open_browser()?;
 //!
-//! server.send(String::from("# Hello, world"));
+//! server.send("# Hello, world");
 //! # Ok::<_, Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -83,7 +83,7 @@ pub struct Server {
     config: Arc<Mutex<Config>>,
     external_renderer: Option<Command>,
     md_clients: Arc<Mutex<IdMap<Sender<Signal>>>>,
-    html: Arc<RwLock<Option<String>>>,
+    html: Arc<RwLock<String>>,
     /// Indicates whether the server should initiate shutdown.
     ///
     /// On drop, we want the server to clean up existing connections gracefully and stop listening
@@ -109,7 +109,7 @@ impl Server {
         let shutdown = Arc::new(AtomicBool::new(false));
         let md_clients = Arc::new(Mutex::new(IdMap::default()));
         let config = Arc::new(Mutex::new(Config::default()));
-        let html = Arc::new(RwLock::new(None));
+        let html = Arc::new(RwLock::new(String::new()));
 
         let conn_shutdown = Arc::clone(&shutdown);
         let conn_md_clients = Arc::clone(&md_clients);
@@ -183,18 +183,24 @@ impl Server {
     ///
     /// This method forwards errors from an external renderer, if set. Otherwise, the method is
     /// infallible.
-    pub fn send(&mut self, markdown: String) -> io::Result<()> {
-        let html = if let Some(renderer) = &mut self.external_renderer {
+    pub fn send(&mut self, markdown: &str) -> io::Result<()> {
+        let mut html_buf = self.html.write().unwrap();
+
+        // Decent heuristic for HTML vs markdown size.
+        let html_capacity = markdown.len() * 3 / 2;
+        if html_buf.capacity() < html_capacity {
+            html_buf.reserve(html_capacity);
+        }
+
+        html_buf.clear();
+
+        if let Some(renderer) = &mut self.external_renderer {
             let child = renderer.spawn()?;
 
             child.stdin.unwrap().write_all(markdown.as_bytes())?;
 
-            let mut html = String::with_capacity(markdown.len());
-            child.stdout.unwrap().read_to_string(&mut html)?;
-
-            html
+            child.stdout.unwrap().read_to_string(&mut *html_buf)?;
         } else {
-            let mut html = String::with_capacity(markdown.len());
             let parser = Parser::new_ext(
                 &markdown,
                 Options::ENABLE_FOOTNOTES
@@ -203,12 +209,10 @@ impl Server {
                     | Options::ENABLE_TASKLISTS,
             );
 
-            pulldown_cmark::html::push_html(&mut html, parser);
-
-            html
+            pulldown_cmark::html::push_html(&mut *html_buf, parser);
         };
 
-        *self.html.write().unwrap() = Some(html);
+        drop(html_buf);
 
         for client in self.md_clients.lock().unwrap().values() {
             client.send(Signal::NewMarkdown).unwrap();
@@ -380,7 +384,7 @@ struct Handler {
     conn: TcpStream,
     config: Arc<Mutex<Config>>,
     md_clients: Arc<Mutex<IdMap<Sender<Signal>>>>,
-    html: Arc<RwLock<Option<String>>>,
+    html: Arc<RwLock<String>>,
 }
 
 impl Handler {
@@ -467,8 +471,9 @@ impl Handler {
         // If there's HTML already present, send it to the client.
         {
             let html = self.html.read().unwrap();
-            if let Some(html) = html.as_ref() {
-                writer.write_message(Message::text(html))?;
+            if !html.is_empty() {
+                // FIXME: avoid copy, snapview/tungstenite-rs#96
+                writer.write_message(Message::text(html.deref()))?;
             }
         }
 
@@ -496,8 +501,12 @@ impl Handler {
                         break;
                     }
 
-                    let html = self.html.read().unwrap();
-                    writer.write_message(Message::text(html.as_ref().expect("no HTML present")))?;
+                    {
+                        let html = self.html.read().unwrap();
+                        // FIXME: avoid copy, snapview/tungstenite-rs#96
+                        writer.write_message(Message::text(html.deref()))?;
+                    }
+
                     writer.write_pending()?;
                 }
             }
@@ -665,7 +674,7 @@ mod tests {
     fn send_with_no_clients() -> Result<(), Box<dyn Error>> {
         let mut server = Server::bind("localhost:0")?;
 
-        server.send(String::from("This shouldn't hang")).unwrap();
+        server.send("This shouldn't hang").unwrap();
 
         Ok(())
     }
@@ -682,11 +691,11 @@ mod tests {
 
         let (mut websocket, _) = tungstenite::connect(req)?;
 
-        server.send(String::from("<p>Hello, world!</p>"))?;
+        server.send("<p>Hello, world!</p>")?;
         let message = websocket.read_message()?;
         assert_eq!(message.to_text()?, "<p>Hello, world!</p>");
 
-        server.send(String::from("<p>Goodbye, world!</p>"))?;
+        server.send("<p>Goodbye, world!</p>")?;
         let message = websocket.read_message()?;
         assert_eq!(message.to_text()?, "<p>Goodbye, world!</p>");
 
@@ -705,7 +714,7 @@ mod tests {
 
         let (mut websocket, _) = tungstenite::connect(req)?;
 
-        server.send(String::from("*Hello*"))?;
+        server.send("*Hello*")?;
         let message = websocket.read_message()?;
         assert_eq!(message.to_text()?.trim(), "<p><em>Hello</em></p>");
 
@@ -736,7 +745,7 @@ mod tests {
         let mut server = Server::bind("localhost:0")?;
         let addr = server.addr();
 
-        server.send(String::from("# Markdown"))?;
+        server.send("# Markdown")?;
 
         let req = Request {
             url: format!("ws://{}", addr).parse()?,
@@ -772,7 +781,7 @@ mod tests {
 
         assert_websocket_closed(&mut websocket);
 
-        server.send(String::from("# Markdown")).unwrap();
+        server.send("# Markdown").unwrap();
 
         assert_matches!(
             websocket.read_message(),
