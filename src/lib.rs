@@ -294,8 +294,9 @@ impl Server {
     /// [CommonMark]: https://commonmark.org/
     /// [`pandoc`]: https://pandoc.org/
     pub fn set_external_renderer(&mut self, mut command: Command) {
-        command.stdin(Stdio::piped());
-        command.stdout(Stdio::piped());
+        command.stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null());
         self.external_renderer = Some(command);
     }
 
@@ -327,6 +328,10 @@ impl Server {
     /// to the command as an argument.
     pub fn open_specific_browser(&self, mut command: Command) -> io::Result<()> {
         command.arg(&format!("http://{}", self.addr()));
+
+        command.stdout(Stdio::null()).stderr(Stdio::null());
+
+        info!("spawning browser: {:?}", command);
         command.spawn()?;
         Ok(())
     }
