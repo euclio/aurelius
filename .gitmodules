@@ -3,7 +3,7 @@
 	url = https://github.com/joewalnes/reconnecting-websocket
 [submodule "static/vendor/highlight.js"]
 	path = static/vendor/highlight.js
-	url = https://github.com/components/highlightjs
+	url = https://github.com/highlightjs/cdn-release
 [submodule "static/vendor/github-markdown-css"]
 	path = static/vendor/github-markdown-css
 	url = https://github.com/euclio/github-markdown-css

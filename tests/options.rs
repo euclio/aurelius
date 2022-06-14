@@ -72,7 +72,7 @@ fn highlight_theme() -> Result<(), Box<dyn Error>> {
     server.set_highlight_theme(String::from("darcula"));
 
     let text = reqwest::blocking::get(&format!("http://{}", server.addr()))?.text()?;
-    assert!(text.contains("darcula.css"));
+    assert!(text.contains("darcula.min.css"));
 
     Ok(())
 }

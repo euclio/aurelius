@@ -8,8 +8,9 @@
     {{#each local_custom_css }}
     <style>{{{ this }}}</style>
     {{/each}}
-    <link href="/__/vendor/highlight.js/styles/{{ highlight_theme }}.css" rel="stylesheet">
+    <link href="/__/vendor/highlight.js/build/styles/{{ highlight_theme }}.min.css" rel="stylesheet">
     <link href="/__/css/styles.css" rel="stylesheet">
+
     {{#if remote_custom_css}}
     {{else}}
       {{#if local_custom_css}}
@@ -24,7 +25,8 @@
   <body>
     <article class="markdown-body" id="markdown-preview"></article>
     <script src="/__/vendor/reconnecting-websocket/reconnecting-websocket.min.js"></script>
-    <script src="/__/vendor/highlight.js/highlight.pack.js"></script>
+    <script src="/__/vendor/highlight.js/build/highlight.min.js"></script>
+    <script src="/__/vendor/highlight.js/build/languages/vim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js"></script>
     <script src="/__/js/markdown_client.js"></script>

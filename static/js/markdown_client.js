@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var codeBlocks = document.querySelectorAll('pre code');
             for (var i = 0; i < codeBlocks.length; i++) {
                 var codeBlock = codeBlocks[i];
-                hljs.highlightBlock(codeBlock);
+                hljs.highlightElement(codeBlock);
 
                 // Since the github css doesn't play nice with highlight.js, we
                 // need to set the background of all `pre` elements to be the

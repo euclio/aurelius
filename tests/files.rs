@@ -93,7 +93,7 @@ fn static_files() -> Result<(), Box<dyn Error>> {
 
     // File in a submodule, make sure that it's included too.
     let res = reqwest::blocking::get(&format!(
-        "http://{}/__/vendor/highlight.js/highlight.pack.js",
+        "http://{}/__/vendor/highlight.js/build/highlight.min.js",
         addr
     ))?;
     assert!(res.status().is_success());
