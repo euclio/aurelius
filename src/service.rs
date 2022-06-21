@@ -47,6 +47,8 @@ impl WebsocketBroadcastService {
                 }
             };
 
+            debug!("switching protocols");
+
             let response = Response::builder()
                 .status(hyper::StatusCode::SWITCHING_PROTOCOLS)
                 .header(header::CONNECTION, "upgrade")
@@ -171,7 +173,11 @@ impl Service<Request<Body>> for WebsocketBroadcastService {
         // Needed to satisfy 'static bound on future.
         let mut service_clone = self.clone();
 
-        Box::pin(async move { Ok(service_clone.handle_request(req).await) })
+        Box::pin(async move {
+            let res = service_clone.handle_request(req).await;
+            debug!("outgoing response: {:?}", res);
+            Ok(res)
+        })
     }
 }
 
@@ -185,6 +191,29 @@ struct TemplateData<'a> {
 fn is_websocket_upgrade<B>(request: &Request<B>) -> bool {
     let headers = request.headers();
 
-    headers.get(header::CONNECTION) == Some(&HeaderValue::from_static("Upgrade"))
-        && headers.get(header::UPGRADE) == Some(&HeaderValue::from_static("websocket"))
+    let is_upgrade = headers.get(header::CONNECTION).map_or(false, |value| {
+        let value = value.to_str().unwrap(); // FIXME
+        value.contains("Upgrade")
+    });
+
+    is_upgrade && headers.get(header::UPGRADE) == Some(&HeaderValue::from_static("websocket"))
+}
+
+#[cfg(test)]
+mod tests {
+    use hyper::{Body, Request};
+
+    use super::is_websocket_upgrade;
+
+    #[test]
+    fn handle_multiple_connection_values() {
+        let req = Request::builder()
+            .header("Connection", "keep-alive, Upgrade")
+            .header("Upgrade", "websocket")
+            .body(Body::empty())
+            .unwrap();
+
+
+        assert!(is_websocket_upgrade(&req));
+    }
 }
