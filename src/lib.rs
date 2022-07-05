@@ -60,23 +60,26 @@ use tokio::sync::watch::{self, Sender};
 use tower_http::trace::TraceLayer;
 use tracing::log::*;
 
+mod render;
 mod service;
+
+pub use render::*;
 
 /// Markdown preview server.
 ///
 /// Listens for HTTP connections and serves a page containing a live markdown preview. The page
 /// contains JavaScript to open a websocket connection back to the server for rendering updates.
 #[derive(Debug)]
-pub struct Server {
+pub struct Server<R> {
     addr: SocketAddr,
     config: Arc<RwLock<Config>>,
-    external_renderer: Option<RefCell<Command>>,
+    renderer: R,
     output: RefCell<String>,
     tx: Sender<String>,
     _shutdown_tx: oneshot::Sender<()>,
 }
 
-impl Server {
+impl<R> Server<R> where R: Renderer {
     /// Binds the server to a specified address.
     ///
     /// Binding to port 0 will request a port assignment from the OS. Use [`addr()`][Self::addr]
@@ -131,30 +134,14 @@ impl Server {
     ///
     /// This method forwards errors from an external renderer, if set. Otherwise, the method is
     /// infallible.
-    pub async fn send(&self, markdown: &str) -> io::Result<()> {
+    pub async fn send(&self, markdown: &str) -> Result<(), R::Error> {
         let mut output = self.output.take();
         output.clear();
 
         // Heuristic taken from rustdoc
         output.reserve(markdown.len() * 3 / 2);
 
-        if let Some(renderer) = &self.external_renderer {
-            let child = renderer.borrow_mut().spawn()?;
-
-            child.stdin.unwrap().write_all(markdown.as_bytes()).await?;
-
-            child.stdout.unwrap().read_to_string(&mut output).await?;
-        } else {
-            let parser = Parser::new_ext(
-                markdown,
-                Options::ENABLE_FOOTNOTES
-                    | Options::ENABLE_TABLES
-                    | Options::ENABLE_STRIKETHROUGH
-                    | Options::ENABLE_TASKLISTS,
-            );
-
-            pulldown_cmark::html::push_html(&mut output, parser);
-        };
+        self.renderer.render(markdown, &mut output)?;
 
         self.output.replace(self.tx.send_replace(output));
 
@@ -208,48 +195,6 @@ impl Server {
         config.css_links = links;
 
         Ok(())
-    }
-
-    /// Set an external program to use for rendering the markdown.
-    ///
-    /// By default, aurelius uses [`pulldown_cmark`] to render markdown in-process.
-    /// `pulldown-cmark` is an extremely fast, [CommonMark]-compliant parser that is sufficient
-    /// for most use-cases. However, other markdown renderers may provide additional features.
-    ///
-    /// The `Command` supplied to this function should expect markdown on stdin and print HTML on
-    /// stdout.
-    ///
-    /// # Example
-    ///
-    /// To use [`pandoc`] to render markdown:
-    ///
-    ///
-    /// ```no_run
-    /// # async fn dox() -> Result<(), Box<dyn std::error::Error>> {
-    /// use std::net::SocketAddr;
-    /// use tokio::process::Command;
-    /// use aurelius::Server;
-    ///
-    /// let addr = "127.0.0.1:1337".parse::<SocketAddr>()?;
-    /// let mut server = Server::bind(&addr).await?;
-    ///
-    /// let mut pandoc = Command::new("pandoc");
-    /// pandoc.args(&["-f", "markdown", "-t", "html"]);
-    ///
-    /// server.set_external_renderer(pandoc);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [`pulldown_cmark`]: https://github.com/raphlinus/pulldown-cmark
-    /// [CommonMark]: https://commonmark.org/
-    /// [`pandoc`]: https://pandoc.org/
-    pub fn set_external_renderer(&mut self, mut command: Command) {
-        command
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null());
-        self.external_renderer = Some(RefCell::new(command));
     }
 
     /// Opens the user's default browser with the server's URL in the background.
