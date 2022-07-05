@@ -92,7 +92,7 @@ async fn highlight_theme() -> Result<(), Box<dyn Error>> {
 
 #[cfg(not(windows))]
 #[tokio::test]
-async fn external_renderer() -> Result<(), Box<dyn Error>> {
+async fn external_renderer() -> Result<(), Box<dyn Error + Send + Sync>> {
     use aurelius::render::CommandRenderer;
     use aurelius::Server;
     use std::process::Command;

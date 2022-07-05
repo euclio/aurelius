@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+use std::error::Error;
 
 use pulldown_cmark::{html, Options, Parser};
 
@@ -29,9 +29,7 @@ impl Default for MarkdownRenderer {
 }
 
 impl Renderer for MarkdownRenderer {
-    type Error = Infallible;
-
-    fn render(&self, markdown: &str, html: &mut String) -> Result<(), Self::Error> {
+    fn render(&self, markdown: &str, html: &mut String) -> Result<(), Box<dyn Error + Sync + Send>> {
         let parser = Parser::new_ext(markdown, self.options);
 
         html::push_html(html, parser);

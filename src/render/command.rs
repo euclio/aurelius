@@ -1,5 +1,6 @@
 use std::cell::RefCell;
-use std::io::{self, prelude::*};
+use std::error::Error;
+use std::io::prelude::*;
 use std::process::{Command, Stdio};
 
 use super::Renderer;
@@ -45,9 +46,7 @@ impl CommandRenderer {
 }
 
 impl Renderer for CommandRenderer {
-    type Error = io::Error;
-
-    fn render(&self, input: &str, html: &mut String) -> Result<(), Self::Error> {
+    fn render(&self, input: &str, html: &mut String) -> Result<(), Box<dyn Error + Sync + Send>> {
         let child = self.command.borrow_mut().spawn()?;
 
         child.stdin.unwrap().write_all(input.as_bytes())?;

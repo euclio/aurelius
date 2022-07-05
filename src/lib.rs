@@ -46,6 +46,8 @@
 #![warn(missing_docs)]
 
 use std::cell::RefCell;
+use std::error::Error;
+use std::fmt;
 use std::fs;
 use std::io;
 use std::net::SocketAddr;
@@ -71,27 +73,26 @@ use crate::render::Renderer;
 /// contains JavaScript to open a websocket connection back to the server for rendering updates.
 ///
 /// The server is asynchronous, and assumes that a `tokio` runtime is in use.
-#[derive(Debug)]
-pub struct Server<R> {
+pub struct Server {
     addr: SocketAddr,
     config: Arc<RwLock<Config>>,
-    renderer: R,
+    renderer: Box<dyn Renderer>,
     output: RefCell<String>,
     tx: Sender<String>,
     _shutdown_tx: oneshot::Sender<()>,
 }
 
-impl<R> Server<R>
-where
-    R: Renderer,
-{
+impl Server {
     /// Binds the server to a specified address `addr` using the provided `renderer`.
     ///
     /// Binding to port 0 will request a port assignment from the OS. Use [`addr()`][Self::addr]
     /// to determine what port was assigned.
     ///
     /// The server must be bound using a Tokio runtime.
-    pub async fn bind(addr: &SocketAddr, renderer: R) -> io::Result<Server<R>> {
+    pub async fn bind<R>(addr: &SocketAddr, renderer: R) -> io::Result<Server>
+    where
+        R: Renderer + 'static,
+    {
         let (tx, rx) = watch::channel(String::new());
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
@@ -119,7 +120,7 @@ where
         Ok(Server {
             addr,
             config,
-            renderer,
+            renderer: Box::new(renderer),
             tx,
             output: RefCell::new(String::new()),
             _shutdown_tx: shutdown_tx,
@@ -134,7 +135,7 @@ where
     /// Publish new input to be rendered by the server.
     ///
     /// The new HTML will be sent to all connected websocket clients.
-    pub async fn send(&self, input: &str) -> Result<(), R::Error> {
+    pub async fn send(&self, input: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
         let mut output = self.output.take();
         output.clear();
 
@@ -234,6 +235,19 @@ where
     }
 }
 
+impl fmt::Debug for Server {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Server")
+            .field("addr", &self.addr)
+            .field("config", &self.config)
+            .field("renderer", &"(dyn Renderer)")
+            .field("output", &self.output)
+            .field("tx", &self.tx)
+            .field("_shutdown_tx", &self._shutdown_tx)
+            .finish()
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct Config {
     static_root: Option<PathBuf>,
@@ -268,7 +282,7 @@ mod tests {
     use crate::render::MarkdownRenderer;
     use crate::Server;
 
-    async fn new_server() -> anyhow::Result<Server<MarkdownRenderer>> {
+    async fn new_server() -> anyhow::Result<Server> {
         let addr = lookup_host("localhost:0").await?.next().unwrap();
         Ok(Server::bind(&addr, MarkdownRenderer::new()).await?)
     }
@@ -311,7 +325,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn send_with_no_clients() -> anyhow::Result<()> {
+    async fn send_with_no_clients() -> Result<(), Box<dyn Error + Send + Sync>> {
         let server = new_server().await?;
 
         server.send("This shouldn't hang").await?;
@@ -340,7 +354,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn send_markdown() -> anyhow::Result<()> {
+    async fn send_markdown() -> Result<(), Box<dyn Error + Send + Sync>> {
         let server = new_server().await?;
 
         let (mut websocket, _) =
@@ -354,7 +368,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn close_websockets_on_drop() -> Result<(), Box<dyn Error>> {
+    async fn close_websockets_on_drop() -> Result<(), Box<dyn Error + Send + Sync>> {
         let server = new_server().await?;
 
         let (mut websocket, _) =
@@ -370,7 +384,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn queue_html_if_no_clients() -> Result<(), Box<dyn Error>> {
+    async fn queue_html_if_no_clients() -> Result<(), Box<dyn Error + Send + Sync>> {
         let server = new_server().await?;
 
         server.send("# Markdown").await?;
@@ -388,7 +402,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn closed_websocket_removed_from_clients() -> Result<(), Box<dyn Error>> {
+    async fn closed_websocket_removed_from_clients() -> Result<(), Box<dyn Error + Send + Sync>> {
         let server = new_server().await?;
 
         let (mut websocket, _) =
