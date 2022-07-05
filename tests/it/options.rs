@@ -93,11 +93,14 @@ async fn highlight_theme() -> Result<(), Box<dyn Error>> {
 #[cfg(not(windows))]
 #[tokio::test]
 async fn external_renderer() -> Result<(), Box<dyn Error>> {
-    use tokio::process::Command;
+    use aurelius::{CommandRenderer, Server};
+    use std::process::Command;
 
-    let mut server = new_server().await?;
-
-    server.set_external_renderer(Command::new("cat"));
+    let addr = tokio::net::lookup_host("localhost:0")
+        .await?
+        .next()
+        .unwrap();
+    let server = Server::bind(&addr, CommandRenderer::new(Command::new("cat"))).await?;
 
     let (mut websocket, _) =
         async_tungstenite::tokio::connect_async(format!("ws://{}", server.addr())).await?;

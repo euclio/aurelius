@@ -4,53 +4,53 @@ use std::process::{Command, Stdio};
 
 use super::Renderer;
 
-/// Markdown renderer that uses an external command as a backend.
+/// Renderer that uses an external command to render input.
 ///
-/// The [`Markdown`] renderer uses an extremely fast, in-memory parser that is sufficient for most
-/// use-cases. However, this renderer may be useful if your markdown requires features unsupported
-/// by [`pulldown_cmark`].
+/// [`MarkdownRenderer`](crate::render::MarkdownRenderer) uses an extremely fast, in-memory parser
+/// that is sufficient for most use-cases. However, this renderer may be useful if your markdown
+/// requires features unsupported by [`pulldown_cmark`].
 ///
 /// # Example
 ///
-/// Creating an external renderer that uses [pandoc](https://pandoc.org/):
+/// Creating an external renderer that uses [pandoc](https://pandoc.org/) to render markdown:
 ///
 /// ```no_run
 /// use std::process::Command;
-/// use aurelius::ExternalCommand;
+/// use aurelius::CommandRenderer;
 ///
 /// let mut pandoc = Command::new("pandoc");
 /// pandoc.args(&["-f", "markdown", "-t", "html"]);
 ///
-/// ExternalCommand::new(pandoc);
+/// CommandRenderer::new(pandoc);
 /// ```
 #[derive(Debug)]
-pub struct ExternalCommand {
+pub struct CommandRenderer {
     command: RefCell<Command>,
 }
 
-impl ExternalCommand {
+impl CommandRenderer {
     /// Create a new external command renderer that will spawn processes using the given `command`.
     ///
     /// The provided [`Command`] should expect markdown input on stdin and print HTML on stdout.
-    pub fn new(mut command: Command) -> ExternalCommand {
+    pub fn new(mut command: Command) -> CommandRenderer {
         command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null());
 
-        ExternalCommand {
+        CommandRenderer {
             command: RefCell::new(command),
         }
     }
 }
 
-impl Renderer for ExternalCommand {
+impl Renderer for CommandRenderer {
     type Error = io::Error;
 
-    fn render(&self, markdown: &str, html: &mut String) -> Result<(), Self::Error> {
+    fn render(&self, input: &str, html: &mut String) -> Result<(), Self::Error> {
         let child = self.command.borrow_mut().spawn()?;
 
-        child.stdin.unwrap().write_all(markdown.as_bytes())?;
+        child.stdin.unwrap().write_all(input.as_bytes())?;
 
         child.stdout.unwrap().read_to_string(html)?;
 

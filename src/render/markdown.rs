@@ -6,14 +6,14 @@ use super::Renderer;
 
 /// Markdown renderer that uses [`pulldown_cmark`] as the backend.
 #[derive(Debug)]
-pub struct Markdown {
+pub struct MarkdownRenderer {
     options: Options,
 }
 
-impl Markdown {
+impl MarkdownRenderer {
     /// Create a new instance of the renderer.
-    pub fn new() -> Markdown {
-        Markdown {
+    pub fn new() -> MarkdownRenderer {
+        MarkdownRenderer {
             options: Options::ENABLE_FOOTNOTES
                 | Options::ENABLE_TABLES
                 | Options::ENABLE_STRIKETHROUGH
@@ -22,13 +22,13 @@ impl Markdown {
     }
 }
 
-impl Default for Markdown {
+impl Default for MarkdownRenderer {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Renderer for Markdown {
+impl Renderer for MarkdownRenderer {
     type Error = Infallible;
 
     fn render(&self, markdown: &str, html: &mut String) -> Result<(), Self::Error> {
