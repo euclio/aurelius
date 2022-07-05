@@ -71,6 +71,7 @@ pub struct Server {
     addr: SocketAddr,
     config: Arc<RwLock<Config>>,
     external_renderer: Option<RefCell<Command>>,
+    output: RefCell<String>,
     tx: Sender<String>,
     _shutdown_tx: oneshot::Sender<()>,
 }
@@ -112,6 +113,7 @@ impl Server {
             config,
             external_renderer: None,
             tx,
+            output: RefCell::new(String::new()),
             _shutdown_tx: shutdown_tx,
         })
     }
@@ -130,17 +132,19 @@ impl Server {
     /// This method forwards errors from an external renderer, if set. Otherwise, the method is
     /// infallible.
     pub async fn send(&self, markdown: &str) -> io::Result<()> {
-        let html = if let Some(renderer) = &self.external_renderer {
+        let mut output = self.output.take();
+        output.clear();
+
+        // Heuristic taken from rustdoc
+        output.reserve(markdown.len() * 3 / 2);
+
+        if let Some(renderer) = &self.external_renderer {
             let child = renderer.borrow_mut().spawn()?;
 
             child.stdin.unwrap().write_all(markdown.as_bytes()).await?;
 
-            let mut html = String::with_capacity(markdown.len());
-            child.stdout.unwrap().read_to_string(&mut html).await?;
-
-            html
+            child.stdout.unwrap().read_to_string(&mut output).await?;
         } else {
-            let mut html = String::with_capacity(markdown.len());
             let parser = Parser::new_ext(
                 markdown,
                 Options::ENABLE_FOOTNOTES
@@ -149,12 +153,10 @@ impl Server {
                     | Options::ENABLE_TASKLISTS,
             );
 
-            pulldown_cmark::html::push_html(&mut html, parser);
-
-            html
+            pulldown_cmark::html::push_html(&mut output, parser);
         };
 
-        self.tx.send_replace(html);
+        self.output.replace(self.tx.send_replace(output));
 
         Ok(())
     }
