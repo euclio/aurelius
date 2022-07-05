@@ -1,13 +1,14 @@
 //! [aurelius](https://github.com/euclio/aurelius) is a complete solution for live-previewing
-//! markdown as HTML.
+//! markdown (and more!) as HTML.
 //!
-//! This crate provides a server that can render and update an HTML preview of markdown without a
+//! This crate provides a [`Server`] that can render and update an HTML preview of input without a
 //! client-side refresh. Upon receiving an HTTP request, the server responds with an HTML page
-//! containing a rendering of supplied markdown. Client-side JavaScript then initiates a WebSocket
+//! containing a rendering of the input. Client-side JavaScript then initiates a WebSocket
 //! connection which allows the server to push changes to the client.
 //!
 //! This crate was designed to power [vim-markdown-composer], a markdown preview plugin for
-//! [Neovim](http://neovim.io), but it may be used to implement similar plugins for any editor.
+//! [Neovim](http://neovim.io), but it may be used to implement similar plugins for any editor. It
+//! also supports arbitrary renderers through the [`Renderer`] trait.
 //! See [vim-markdown-composer] for a real-world usage example.
 //!
 //! # Example
@@ -15,10 +16,11 @@
 //! ```no_run
 //! use std::net::SocketAddr;
 //! use aurelius::Server;
+//! use aurelius::render::MarkdownRenderer;
 //!
 //! # tokio_test::block_on(async {
 //! let addr = "127.0.0.1:1337".parse::<SocketAddr>()?;
-//! let mut server = Server::bind(&addr).await?;
+//! let mut server = Server::bind(&addr, MarkdownRenderer::new()).await?;
 //!
 //! server.open_browser()?;
 //!
@@ -52,38 +54,44 @@ use std::process::Stdio;
 use std::sync::{Arc, RwLock};
 
 use axum::{extract::Extension, http::Uri, routing::get, Router};
-use pulldown_cmark::{Options, Parser};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 use tokio::sync::oneshot;
 use tokio::sync::watch::{self, Sender};
 use tower_http::trace::TraceLayer;
 use tracing::log::*;
 
+pub mod render;
 mod service;
 
-/// Markdown preview server.
+use crate::render::Renderer;
+
+/// Live preview server.
 ///
-/// Listens for HTTP connections and serves a page containing a live markdown preview. The page
+/// Listens for HTTP connections and serves a page containing a live rendered preview. The page
 /// contains JavaScript to open a websocket connection back to the server for rendering updates.
+///
+/// The server is asynchronous, and assumes that a `tokio` runtime is in use.
 #[derive(Debug)]
-pub struct Server {
+pub struct Server<R> {
     addr: SocketAddr,
     config: Arc<RwLock<Config>>,
-    external_renderer: Option<RefCell<Command>>,
+    renderer: R,
     output: RefCell<String>,
     tx: Sender<String>,
     _shutdown_tx: oneshot::Sender<()>,
 }
 
-impl Server {
-    /// Binds the server to a specified address.
+impl<R> Server<R>
+where
+    R: Renderer,
+{
+    /// Binds the server to a specified address `addr` using the provided `renderer`.
     ///
     /// Binding to port 0 will request a port assignment from the OS. Use [`addr()`][Self::addr]
     /// to determine what port was assigned.
     ///
     /// The server must be bound using a Tokio runtime.
-    pub async fn bind(addr: &SocketAddr) -> io::Result<Self> {
+    pub async fn bind(addr: &SocketAddr, renderer: R) -> io::Result<Server<R>> {
         let (tx, rx) = watch::channel(String::new());
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
@@ -111,7 +119,7 @@ impl Server {
         Ok(Server {
             addr,
             config,
-            external_renderer: None,
+            renderer,
             tx,
             output: RefCell::new(String::new()),
             _shutdown_tx: shutdown_tx,
@@ -123,38 +131,17 @@ impl Server {
         self.addr
     }
 
-    /// Publish new markdown to be rendered by the server.
+    /// Publish new input to be rendered by the server.
     ///
     /// The new HTML will be sent to all connected websocket clients.
-    ///
-    /// # Errors
-    ///
-    /// This method forwards errors from an external renderer, if set. Otherwise, the method is
-    /// infallible.
-    pub async fn send(&self, markdown: &str) -> io::Result<()> {
+    pub async fn send(&self, input: &str) -> Result<(), R::Error> {
         let mut output = self.output.take();
         output.clear();
 
         // Heuristic taken from rustdoc
-        output.reserve(markdown.len() * 3 / 2);
+        output.reserve(input.len() * 3 / 2);
 
-        if let Some(renderer) = &self.external_renderer {
-            let child = renderer.borrow_mut().spawn()?;
-
-            child.stdin.unwrap().write_all(markdown.as_bytes()).await?;
-
-            child.stdout.unwrap().read_to_string(&mut output).await?;
-        } else {
-            let parser = Parser::new_ext(
-                markdown,
-                Options::ENABLE_FOOTNOTES
-                    | Options::ENABLE_TABLES
-                    | Options::ENABLE_STRIKETHROUGH
-                    | Options::ENABLE_TASKLISTS,
-            );
-
-            pulldown_cmark::html::push_html(&mut output, parser);
-        };
+        self.renderer.render(input, &mut output)?;
 
         self.output.replace(self.tx.send_replace(output));
 
@@ -165,7 +152,7 @@ impl Server {
     ///
     /// This can be thought of as the "working directory" of the server. Any HTTP requests with
     /// non-root paths will be joined to this folder and used to serve files from the filesystem.
-    /// Typically this is used to serve image links relative to the markdown file.
+    /// Typically this is used to serve image links relative to the input file.
     ///
     /// By default, the server will not serve static files.
     pub fn set_static_root(&mut self, root: impl Into<PathBuf>) {
@@ -208,48 +195,6 @@ impl Server {
         config.css_links = links;
 
         Ok(())
-    }
-
-    /// Set an external program to use for rendering the markdown.
-    ///
-    /// By default, aurelius uses [`pulldown_cmark`] to render markdown in-process.
-    /// `pulldown-cmark` is an extremely fast, [CommonMark]-compliant parser that is sufficient
-    /// for most use-cases. However, other markdown renderers may provide additional features.
-    ///
-    /// The `Command` supplied to this function should expect markdown on stdin and print HTML on
-    /// stdout.
-    ///
-    /// # Example
-    ///
-    /// To use [`pandoc`] to render markdown:
-    ///
-    ///
-    /// ```no_run
-    /// # async fn dox() -> Result<(), Box<dyn std::error::Error>> {
-    /// use std::net::SocketAddr;
-    /// use tokio::process::Command;
-    /// use aurelius::Server;
-    ///
-    /// let addr = "127.0.0.1:1337".parse::<SocketAddr>()?;
-    /// let mut server = Server::bind(&addr).await?;
-    ///
-    /// let mut pandoc = Command::new("pandoc");
-    /// pandoc.args(&["-f", "markdown", "-t", "html"]);
-    ///
-    /// server.set_external_renderer(pandoc);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [`pulldown_cmark`]: https://github.com/raphlinus/pulldown-cmark
-    /// [CommonMark]: https://commonmark.org/
-    /// [`pandoc`]: https://pandoc.org/
-    pub fn set_external_renderer(&mut self, mut command: Command) {
-        command
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null());
-        self.external_renderer = Some(RefCell::new(command));
     }
 
     /// Opens the user's default browser with the server's URL in the background.
@@ -320,11 +265,12 @@ mod tests {
     use tokio::net::lookup_host;
     use tokio::time::{timeout, Duration};
 
-    use super::Server;
+    use crate::render::MarkdownRenderer;
+    use crate::Server;
 
-    async fn new_server() -> anyhow::Result<Server> {
+    async fn new_server() -> anyhow::Result<Server<MarkdownRenderer>> {
         let addr = lookup_host("localhost:0").await?.next().unwrap();
-        Ok(Server::bind(&addr).await?)
+        Ok(Server::bind(&addr, MarkdownRenderer::new()).await?)
     }
 
     async fn assert_websocket_closed<S: AsyncRead + AsyncWrite + Unpin>(
