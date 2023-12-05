@@ -82,7 +82,8 @@ async fn change_static_root_to_file() -> Result<(), Box<dyn Error>> {
 
 #[tokio::test]
 async fn static_files() -> Result<(), Box<dyn Error>> {
-    let server = new_server().await?;
+    let mut server = new_server().await?;
+    server.set_static_root("static");
     let addr = server.addr();
 
     let res = reqwest::get(&format!("http://{}/__/css/styles.css", addr)).await?;
